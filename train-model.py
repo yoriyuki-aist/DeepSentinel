@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 import argparse
 import pickle
-import os
+import pathlib import Path
 import glob
-import os.path
+import os
+import sys
 from storages import log_store
 from storages.log_store import LogStore
 from log_model import logModel
@@ -23,40 +24,47 @@ if __name__ == '__main__':
     parser.add_argument('--cont', '-c', default=False,
                 help='Continue to learn')
     parser.add_argument('logfile', metavar='F')
-    parser.add_argument('chunk', metavar='C', type=int)
 
     args = parser.parse_args()
 
 
-    if not os.path.exists('output'):
+    if not Path('output').exists():
         os.mkdir('output')
+    else:
+        if not Path('output').is_dir():
+            sys.exit('output is not a directory.')
+
+
+    logname = Path(args.logfile).stem()
+    logstore = (Path('output') / logname).with_suffix('.pickle')
 
     print("loading log file...")
-    if args.cont and os.path.isfile('output/log_store.pickle'):
-        with open('output/log_store.pickle', 'rb') as logstorefile:
+    if args.cont and logstre.exists():
+        with open(logstore, 'rb') as logstorefile:
             log_store = pickle.load(logstorefile)
     else:
         log_store = LogStore(args.logfile)
 
-    with open('output/log_store.pickle', 'wb') as f:
+    with open(logstore, 'wb') as f:
         pickle.dump(log_store, f)
     print("start learning...")
-
-    if args.cont:
-        for epoch in range(args.iter, 0, -1):
-            log_model_name = "output/log_model-{}-{}-{}.pickle".format(args.chunk, args.n_units, epoch)
-            if os.path.isfile(log_model_name):
-                break
-
-        if os.path.isfile(log_model_name):
-            with open(log_model_name, 'rb') as modelfile:
-                log_model = pickle.load(modelfile)
-        else:
-            log_model = LogModel(log_store, args.chunk, args.n_units, gpu=args.gpu, directory='output/')
-    else:
-        log_model = LogModel(log_store, args.chunk, args.n_units, gpu=args.gpu, directory='output/')
-
-    if log_model.current_epoch == args.iter:
-        log_model.eval()
-    else:
-        log_model.train(args.iter)
+    #
+    # if args.cont:
+    #     for epoch in range(args.iter, 0, -1):
+    #         log_model_name = logname + "-model-{}-{}-{}".format(args.chunk, args.n_units, epoch)
+    #         model_path = (Path('output') / log_model_name).with_suffix('.pickle')
+    #         if path.exists():
+    #             break
+    #
+    #     if model_path.exists(log_model_name):
+    #         with open(model_path, 'rb') as modelfile:
+    #             log_model = pickle.load(modelfile)
+    #     else:
+    #         log_model = LogModel(log_store, args.chunk, args.n_units, gpu=args.gpu, directory=Path('output'))
+    # else:
+    #     log_model = LogModel(log_store, args.chunk, args.n_units, gpu=args.gpu, directory=Path('output'))
+    #
+    # if log_model.current_epoch == args.iter:
+    #     pass
+    # else:
+    #     log_model.train(args.iter)
