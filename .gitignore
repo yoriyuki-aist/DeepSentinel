@@ -1,0 +1,10 @@
+.git
+*.log
+*.aux
+*.fls
+*.gz
+*.jar
+*.pyc
+*.fdb_latexmk
+*.bbl
+*.blg
