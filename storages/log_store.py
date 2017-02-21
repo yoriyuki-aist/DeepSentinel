@@ -35,7 +35,7 @@ class LogStore:
         ('P6', 'FIT601') ]
         zscore = lambda x: (x - x.mean()) / x.std()
         self.values = log[value_labels].apply(zscore)
-        
+
         discreate_labels = [
         ('P1', 'MV101'),
         ('P1', 'P101'),
@@ -64,6 +64,16 @@ class LogStore:
         ('P6', 'P602'),
         ('P6', 'P603'),]
         self.indices = log[dicreate_labels]
+        index_set = set()
+        for indicies in self.indices.values.tolist():
+            set.add(tuple(indices))
+        num = 0
+        indices2num = {}
+        for indices in index_set:
+            indices2num[num] = indices
+            num += 1
+
+
 
 
     def eva_seq(self):
