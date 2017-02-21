@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import argparse
 import pickle
-import pathlib import Path
+from pathlib import Path
 import glob
 import os
 import sys
@@ -14,7 +14,7 @@ from log_model.logModel import LogModel
 if __name__ == '__main__':
 
     #コマンドライン引数
-    parser = argparse.ArgumentParser(description='LSTM')
+    parser = argparse.ArgumentParser(description='Train a model')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--n_units', '-n', type=int, default=2000,
@@ -23,7 +23,7 @@ if __name__ == '__main__':
                     help='Number of epochs')
     parser.add_argument('--cont', '-c', default=False,
                 help='Continue to learn')
-    parser.add_argument('logfile', metavar='F')
+    parser.add_argument('logfile', metavar='F', help='Normal log file')
 
     args = parser.parse_args()
 
@@ -35,7 +35,7 @@ if __name__ == '__main__':
             sys.exit('output is not a directory.')
 
 
-    logname = Path(args.logfile).stem()
+    logname = Path(args.logfile).stem
     logstore = (Path('output') / logname).with_suffix('.pickle')
 
     print("loading log file...")
