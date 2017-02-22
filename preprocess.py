@@ -40,14 +40,14 @@ if __name__ == '__main__':
 
     print("loading log file...")
     if args.cont and logstre.exists():
-        with open(logstore, 'rb') as logstorefile:
+        with logstore.open(mode='rb') as logstorefile:
             log_store = pickle.load(logstorefile)
     else:
         log_store = LogStore(args.logfile)
 
-    with open(logstore, 'wb') as f:
+    with logstore.open(mode='wb') as f:
         pickle.dump(log_store, f)
-    print("start learning...")
+    #print("start learning...")
     #
     # if args.cont:
     #     for epoch in range(args.iter, 0, -1):

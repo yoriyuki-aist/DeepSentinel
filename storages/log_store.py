@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import itertools
+import operator
 
 class LogStore:
     def __init__(self, filename):
@@ -36,7 +37,7 @@ class LogStore:
         zscore = lambda x: (x - x.mean()) / x.std()
         self.values = log[value_labels].apply(zscore)
 
-        discreate_labels = [
+        discrete_labels = [
         ('P1', 'MV101'),
         ('P1', 'P101'),
         ('P1', 'P102'),
@@ -63,20 +64,17 @@ class LogStore:
         ('P6', 'P601'),
         ('P6', 'P602'),
         ('P6', 'P603'),]
-        self.indices = log[dicreate_labels]
-        index_set = set()
-        for indicies in self.indices.values.tolist():
-            set.add(tuple(indices))
-        num = 0
-        indices2num = {}
-        for indices in index_set:
-            indices2num[num] = indices
-            num += 1
+        indices = log[discrete_labels]
 
+        index_set = set(map(tuple, log[discrete_labels].values.tolist()))
+        index_list= sorted(list(index_set))
+        indices2num = dict(zip(index_list, itertools.count(1)))
+        log[('num', '')] = indices.apply(lambda x: indices2num[tuple(x)], axis=1)
+        self.indices = log[discrete_labels + [('num', '')]]
+        self.indices2num = indices2num
+        self.maxnum = max(indices2num.items(), key=operator.itemgetter(1))[1]
 
-
-
-    def eva_seq(self):
+    def eval_seq(self):
         values = self.values
         inices = self.indices
 
