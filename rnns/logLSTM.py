@@ -3,7 +3,7 @@ import chainer
 from chainer import Variable, functions as F, links as L
 
 class LogLSTM(chainer.Chain):
-    def __init__(self, label_units, note_units, command_units, n_units):
+    def __init__(self, index_units, num_units, value_units, n_units):
         super(LogLSTM, self).__init__(
             embed_label = L.EmbedID(label_units, label_units),
             embed_note = L.EmbedID(note_units, n_units),
