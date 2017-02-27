@@ -3,21 +3,21 @@ import chainer
 from chainer import Variable, functions as F, links as L
 
 class LogLSTM(chainer.Chain):
-    def __init__(self, index_units, num_units, value_units, n_units):
+    def __init__(self, index_units, value_units, n_units):
         super(LogLSTM, self).__init__(
-            embed_label = L.EmbedID(label_units, label_units),
-            embed_note = L.EmbedID(note_units, n_units),
-            l1 = L.LSTM(label_units + n_units + 2, n_units),
+            index_inputs = [L.Linear(3, n_units) for i in range(index_units)]
+            value_input = L.Linear(value_units, n_units)
+            l1 = L.LSTM(n_units, n_units),
             l2 = L.LSTM(n_units, n_units),
-            output = L.Linear(n_units, 5 * command_units),
+            output = L.Linear(n_units, 3 * index_units + 2 * value_units),
         )
-        self.command_units = command_units
+        self.index_units = index_units
+        self.value_units = value_units
 
     def reset_state(self):
         self.l1.reset_state()
         self.l2.reset_state()
 
-    #ネットワークの学習、lossを計算
     def __call__(self, data):
         loss = 0
 
@@ -27,22 +27,27 @@ class LogLSTM(chainer.Chain):
         return loss
 
     def eval(self, current_data, next_data, volatile='off', train=False):
-        labels = self.embed_label(Variable(current_data[0], volatile=volatile))
-        notes = self.embed_note(Variable(current_data[1], volatile=volatile))
-        vals = Variable(current_data[3], volatile=volatile)
-        l0 = F.concat((labels, notes, vals), axis=1)
-        h1 = F.dropout(self.l1(l0), train=train)
+        current_indices = current_data[0]
+        next_indices = next_data[0]
+        current_values = current_data[1]
+        next_values = next_data[1]
+
+        index_vector = sum([index_inputs[i](current_indices[i], volatile=volatile) for i in range(self.index_units)])
+        value_vector = value_input(curret_values, volatile=volatile)
+
+        h1 = F.dropout(self.l1(index_vector + value_vector), train=train)
         h2 = F.dropout(self.l2(h1), train=train)
         y = self.output(h2)
 
-        commands_nt = Variable(next_data[2], volatile=volatile)
-        vals_nt = Variable(next_data[3], volatile=volatile)
+        loss = 0.0
+        for i in range(self.index_units):
+            next_indix_var = Variable(next_indices[i], volatile=volatile)
+            loss += F.softmax_cross_entropy(y[3*i:3*i+3], next_index_var,  use_cudnn=False)
 
-        y_commands, y_vals = F.split_axis(y, [self.command_units], 1)
-        loss = F.softmax_cross_entropy(y_commands, commands_nt,  use_cudnn=False)
-
-        mean = F.get_item(F.dstack([F.select_item(y_vals, 4*commands_nt), F.select_item(y_vals, 4*commands_nt+1)]), 0)
-        logvar2 = F.get_item(F.dstack([F.select_item(y_vals, 4*commands_nt+2), F.select_item(y_vals, 4*commands_nt+3)]), 0)
-        loss += F.gaussian_nll(vals_nt, mean, logvar2)
+        for i in range(self.value_unit):
+            next_value_var = Variable(next_values[i], volatile=volatile)
+            mean = F.select_item(y, 3 * self.index_units + 2 * i)
+            logvar2 = F.select_item(y, 3 * self.index_units + 2 * i + 1)
+            loss += F.gaussian_nll(next_value_var, mean, logvar2)
 
         return loss
