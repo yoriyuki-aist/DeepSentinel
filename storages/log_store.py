@@ -68,12 +68,8 @@ class LogStore:
         self.values = self.log[value_labels].apply(zscore)
 
         self.indices = self.log[discrete_labels]
-        self.indices2num = None
 
     def eval_seq(self, indices2num):
-        self.log[('num', '')] = self.indices.apply(lambda x: indices2num[tuple(x)], axis=1)
-        self.indices = self.log[discrete_labels + [('num', '')]]
-
         value_shape = self.values.values.shape
         indices_shape = self.indices.values.shape
 
@@ -82,15 +78,6 @@ class LogStore:
         return (values_seq, indices_seq)
 
     def training_seq(self):
-        if self.indices2num == None:
-            index_set = set(map(tuple, self.log[discrete_labels].values.tolist()))
-            index_list= sorted(list(index_set))
-            self.indices2num = dict(zip(index_list, itertools.count(1)))
-            self.maxnum = max(self.indices2num.items(), key=operator.itemgetter(1))[1]
-
-        self.log[('num', '')] = self.indices.apply(lambda x: self.indices2num[tuple(x)], axis=1)
-        self.indices = self.log[discrete_labels + [('num', '')]]
-
         values = self.values[self.values.index.date != self.last_day]
         indices = self.indices[self.values.index.date != self.last_day]
 
@@ -106,12 +93,6 @@ class LogStore:
         return (np.array(values_seq).T, np.array(indices_seq).T)
 
     def test_seq(self):
-        if self.indices2num == None:
-            self.training_seq()
-
-        self.log[('num', '')] = self.indices.apply(lambda x: self.indices2num.get(tuple(x), 0), axis=1)
-        self.indices = self.log[discrete_labels + [('num', '')]]
-
         values = self.values[self.values.index.date == self.last_day]
         indices = self.indices[self.values.index.date == self.last_day]
 
