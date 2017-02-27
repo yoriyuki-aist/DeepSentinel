@@ -61,16 +61,17 @@ discrete_labels = [
 class LogStore:
     def __init__(self, filename):
         self.log = pd.read_excel(filename, header=[0, 1])
-        log.index = self.log.index.to_datetime()
-        self.last_day = log.tail(1).index[0].date()
+        self.log.index = self.log.index.to_datetime()
+        self.last_day = self.log.tail(1).index[0].date()
 
         zscore = lambda x: (x - x.mean()) / x.std()
         self.values = self.log[value_labels].apply(zscore)
 
         self.indices = self.log[discrete_labels]
+        self.indices2num = None
 
     def eval_seq(self, indices2num):
-        self.log[('num', '')] = indices.apply(lambda x: indices2num[tuple(x)], axis=1)
+        self.log[('num', '')] = self.indices.apply(lambda x: indices2num[tuple(x)], axis=1)
         self.indices = self.log[discrete_labels + [('num', '')]]
 
         value_shape = self.values.values.shape
@@ -85,13 +86,16 @@ class LogStore:
             index_set = set(map(tuple, self.log[discrete_labels].values.tolist()))
             index_list= sorted(list(index_set))
             self.indices2num = dict(zip(index_list, itertools.count(1)))
-            self.maxnum = max(indices2num.items(), key=operator.itemgetter(1))[1]
+            self.maxnum = max(self.indices2num.items(), key=operator.itemgetter(1))[1]
+
+        self.log[('num', '')] = self.indices.apply(lambda x: self.indices2num[tuple(x)], axis=1)
+        self.indices = self.log[discrete_labels + [('num', '')]]
 
         values = self.values[self.values.index.date != self.last_day]
-        inices = self.indices[self.values.index.date != self.last_day]
+        indices = self.indices[self.values.index.date != self.last_day]
 
         grouped_by_day = values.groupby(lambda x: x.date)
-        dates = grouped_by_day.groups.key()
+        dates = grouped_by_day.groups.keys()
         values_seq = []
         indices_seq = []
         for date in dates:
@@ -99,17 +103,17 @@ class LogStore:
             indices_by_day = indices.loc[pd.Series(grouped_by_day.groups[date])]
             values_seq.append(values_by_day.values)
             indices_seq.append(indices_by_day.values)
-        return (nq.array(values_seq).T, nq.array(indices_seq).T)
+        return (np.array(values_seq).T, np.array(indices_seq).T)
 
     def test_seq(self):
         if self.indices2num == None:
-            index_set = set(map(tuple, self.log[discrete_labels].values.tolist()))
-            index_list= sorted(list(index_set))
-            self.indices2num = dict(zip(index_list, itertools.count(1)))
-            self.maxnum = max(indices2num.items(), key=operator.itemgetter(1))[1]
+            self.training_seq()
+
+        self.log[('num', '')] = self.indices.apply(lambda x: self.indices2num.get(tuple(x), 0), axis=1)
+        self.indices = self.log[discrete_labels + [('num', '')]]
 
         values = self.values[self.values.index.date == self.last_day]
-        inices = self.indices[self.values.index.date == self.last_day]
+        indices = self.indices[self.values.index.date == self.last_day]
 
         value_shape = values.values.shape
         indices_shape = indices.values.shape
