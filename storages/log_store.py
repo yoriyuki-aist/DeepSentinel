@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import itertools
 import operator
+from pathlib import Path
 
 value_labels = [('P1', 'FIT101'),
 ('P1', 'LIT101'),
@@ -63,42 +64,25 @@ class LogStore:
         self.log = pd.read_excel(filename, header=[0, 1])
         self.log.index = self.log.index.to_datetime()
         self.last_day = self.log.tail(1).index[0].date()
+        self.filename = Path(filename).stem
 
         zscore = lambda x: (x - x.mean()) / x.std()
-        self.values = self.log[value_labels].apply(zscore)
+        values = self.log[value_labels].apply(zscore)
 
-        self.indices = self.log[discrete_labels]
+        indices = self.log[discrete_labels]
+        self.value_units = len(value_labels)
+        self.index_units = len(discrete_labels)
+        self.seq = np.concatenate((indices.values, values.values), axis=1)
 
-    def eval_seq(self, indices2num):
-        value_shape = self.values.values.shape
-        indices_shape = self.indices.values.shape
+    def batch_seq(self, chunk_num, start, stop):
+        chunked = np.array_split(self.seq, chunk_num)
+        return np.stack(chunked_values, axis=-1)
 
-        values_seq = self.values.values.reshape(value_shape[0], 1, value_shape[1])
-        indices_seq = self.indices.values.reshape(indices_shape[0], 1, indices_shape[1])
-        return (values_seq, indices_seq)
+    def training_seq(self, chunk_num):
+        return self.batch_seq(chunk_num, 0, chunk_num-1)
 
-    def training_seq(self):
-        values = self.values[self.values.index.date != self.last_day]
-        indices = self.indices[self.values.index.date != self.last_day]
+    def test_seq(self, chunk_num):
+        return self.batch_seq(chunk_num, chunk_num-1, chunk_num)
 
-        grouped_by_day = values.groupby(lambda x: x.date)
-        dates = grouped_by_day.groups.keys()
-        values_seq = []
-        indices_seq = []
-        for date in dates:
-            values_by_day = values.loc[pd.Series(grouped_by_day.groups[date])]
-            indices_by_day = indices.loc[pd.Series(grouped_by_day.groups[date])]
-            values_seq.append(values_by_day.values)
-            indices_seq.append(indices_by_day.values)
-        return (np.array(values_seq).T, np.array(indices_seq).T)
-
-    def test_seq(self):
-        values = self.values[self.values.index.date == self.last_day]
-        indices = self.indices[self.values.index.date == self.last_day]
-
-        value_shape = values.values.shape
-        indices_shape = indices.values.shape
-
-        values_seq = values.values.reshape(value_shape[0], 1, value_shape[1])
-        indices_seq = indices.values.reshape(indices_shape[0], 1, indices_shape[1])
-        return (values_seq, indices_seq)
+    def eval_seq(self, chunk_num):
+        return self.batch_seq(1, 0, 1)

@@ -39,7 +39,7 @@ if __name__ == '__main__':
     logstore = (Path('output') / logname).with_suffix('.pickle')
 
     print("loading log file...")
-    if args.cont and logstre.exists():
+    if args.cont and logstore.exists():
         with logstore.open(mode='rb') as logstorefile:
             log_store = pickle.load(logstorefile)
     else:

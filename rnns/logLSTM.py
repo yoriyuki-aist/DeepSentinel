@@ -5,8 +5,8 @@ from chainer import Variable, functions as F, links as L
 class LogLSTM(chainer.Chain):
     def __init__(self, index_units, value_units, n_units):
         super(LogLSTM, self).__init__(
-            index_inputs = [L.Linear(3, n_units) for i in range(index_units)]
-            value_input = L.Linear(value_units, n_units)
+            index_inputs = [L.Linear(3, n_units) for i in range(index_units)],
+            value_input = L.Linear(value_units, n_units),
             l1 = L.LSTM(n_units, n_units),
             l2 = L.LSTM(n_units, n_units),
             output = L.Linear(n_units, 3 * index_units + 2 * value_units),
