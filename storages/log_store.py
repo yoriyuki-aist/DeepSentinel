@@ -68,15 +68,20 @@ class LogStore:
 
         zscore = lambda x: (x - x.mean()) / x.std()
         values = self.log[value_labels].apply(zscore)
+        values.fillna(0)
 
         indices = self.log[discrete_labels]
+        index_dummies = [pd.get_dummies(indices[label]).values for label in discrete_labels]
+        index_seq = np.concatenate(index_dummies, axis=1)
+
         self.value_units = len(value_labels)
-        self.index_units = len(discrete_labels)
-        self.seq = np.concatenate((indices.values, values.values), axis=1)
+        self.index_units = index_seq.shape[1]
+        self.seq = np.concatenate((index_seq, values.values), axis=1)
 
     def batch_seq(self, chunk_num, start, stop):
-        chunked = np.array_split(self.seq, chunk_num)
-        return np.stack(chunked_values, axis=-1)
+        seq = self.seq[0:len(self.seq) // chunk_num * chunk_num]
+        chunked = np.split(seq, chunk_num)
+        return np.stack(chunked, axis=-1)
 
     def training_seq(self, chunk_num):
         return self.batch_seq(chunk_num, 0, chunk_num-1)

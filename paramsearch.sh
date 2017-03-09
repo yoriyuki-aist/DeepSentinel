@@ -1,2 +1,2 @@
 #!/bin/bash
-seq $1 $2 $3 | xargs -I "{}" python rnn-anomaly-detector.py --iter $4 -n "{}" -g 0 -c true ../../data/aquarium/log.csv $5
+seq $2 $3 $4 | xargs -I "{}" python training.py --iter $5 -n "{}" -g -1 -c true  $1

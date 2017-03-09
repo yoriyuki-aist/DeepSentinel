@@ -17,18 +17,13 @@ class LogModel:
         self.gpu = gpu
         self.dir = directory
         self.current_epoch = 0
-        self.chunk_size = 10
-        self.train_seq = log_store.training_seq(self.chunk_size)
-        self.test_seeq = log_store.test_seq(self.chunk_size)
+        self.chunk_num = 10
+        self.train_seq = log_store.training_seq(self.chunk_num)
+        self.test_seq = log_store.test_seq(self.chunk_num)
 
         self.model = LogLSTM(log_store.index_units, log_store.value_units, self.n_units)
 
     def train(self, epoch):
-        xp = np
-        if self.gpu >= 0:
-            print("Use GPU ", self.gpu)
-            xp = cuda.cupy
-
         if self.current_epoch >= epoch:
             pass
         else:
@@ -45,7 +40,7 @@ class LogModel:
                 cur, nt = itertools.tee(self.train_seq)
                 nt = itertools.islice(nt, 1, None)
                 data = zip(cur, nt)
-                for k in tqdm(range(0, self.chunk_size, self.tr_sq_ln)):
+                for k in tqdm(range(0, len(self.train_seq), self.tr_sq_ln)):
                     model.cleargrads()
                     data_seq = list(itertools.islice(data, self.tr_sq_ln))
                     loss = model(data_seq)
@@ -56,14 +51,11 @@ class LogModel:
                 self.current_epoch = j
                 self.save()
                 model.reset_state()
-                loss = self.eval(test_seq, log_store.filename)
-                with open(self.dir+"stat-{}-{}.csv".format(self.chunk, self.n_units),'a') as statfile:
+                loss = self.eval(self.test_seq, self.log_store.filename)
+                with open(self.dir+"stat-{}-{}.csv".format(self.log_store.filename, self.n_units),'a') as statfile:
                     print(j, ',',  2**loss, file=statfile)
 
     def _eval(self, seq):
-        xp = np
-        if self.gpu >= 0:
-            xp = cuda.cupy
         self.model.reset_state()
         cur, nt = itertools.tee(seq)
         nt = itertools.islice(nt, 1, None)
@@ -73,13 +65,13 @@ class LogModel:
     def eval(self, seq, filename):
         count = 0
         sum_loss = 0
-        with open(self.dir+"{}-{}-{}-{}.csv".format(filename, self.n_units, self.current_epoch), 'w') as f:
-            for outlier_factor in self._eval():
+        with open(self.dir+"{}-{}-{}.csv".format(filename, self.n_units, self.current_epoch), 'w') as f:
+            for outlier_factor in self._eval(tqdm(seq)):
                 sum_loss += outlier_factor
-                print(self.log_store.ID_seqs[self.chunk][count], ',', outlier_factor, file=f)
+                print(outlier_factor, file=f)
                 count += 1
-        return sum_loss / (self.log_store.chunk_size - 1)
+        return sum_loss / len(seq)
 
     def save(self):
-        with open(self.dir+"log_model-{}-{}-{}.pickle".format(self.n_units, self.current_epoch), 'wb') as f:
+        with open(self.dir+"{}-model-{}-{}.pickle".format(self.log_store.filename, self.n_units, self.current_epoch), 'wb') as f:
             pickle.dump(self, f)
