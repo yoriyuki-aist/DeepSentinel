@@ -63,7 +63,6 @@ class LogStore:
     def __init__(self, filename):
         self.log = pd.read_excel(filename, header=[0, 1])
         self.log.index = self.log.index.to_datetime()
-        self.last_day = self.log.tail(1).index[0].date()
         self.filename = Path(filename).stem
 
         zscore = lambda x: (x - x.mean()) / x.std()
@@ -72,7 +71,13 @@ class LogStore:
 
         indices = self.log[discrete_labels]
         index_dummies = [pd.get_dummies(indices[label]).values for label in discrete_labels]
-        index_seq = np.concatenate(index_dummies, axis=1)
+        indices = []
+        for index_dummy in index_dummies:
+            num = index_dummy.shape[0]
+            pad_width = 3 - index_dummy.shape[1]
+            padded = np.pad(index_dummy, ((0, 0), (0, pad_width)), mode='constant', constant_values=0)
+            indices.append(padded)
+        index_seq = np.concatenate(indices, axis=1)
 
         self.value_units = len(value_labels)
         self.index_units = index_seq.shape[1]

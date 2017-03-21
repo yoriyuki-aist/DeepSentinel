@@ -35,11 +35,14 @@ class LogLSTM(chainer.Chain):
         h2 = F.dropout(self.l2(h1), train=train)
         y = self.output(h2)
         y_index, mean, logvar2 = F.split_axis(y, [self.index_units, self.index_units + self.value_units], 1)
+        y_indices = F.split_axis(y_index, list(range(3, self.index_units, 3)), 1)
 
         next_var = Variable(outpt, volatile=volatile)
         next_index, next_value = F.split_axis(next_var, [self.index_units], 1)
-
-        loss = F.sum(F.matmul(-F.log_softmax(y_index), F.transpose(next_index)))
+        next_indices = F.split_axis(next_index, list(range(3, self.index_units, 3)), 1)
+        loss = 0.0
+        for y_i, next_i in zip(y_indices, next_indices):
+            loss += F.sum(F.matmul(-F.log_softmax(y_i), F.transpose(next_i)))
         loss += F.gaussian_nll(next_value, mean, logvar2)
 
         return loss
