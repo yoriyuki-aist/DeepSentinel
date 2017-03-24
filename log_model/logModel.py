@@ -9,8 +9,13 @@ from rnns import logLSTM
 from rnns.logLSTM import LogLSTM
 from tqdm import tqdm
 
+def batch_seq(seq, chunk_num, start, stop):
+    seq = seq[0:len(seq) // chunk_num * chunk_num]
+    chunked = np.split(seq, chunk_num)
+    return np.stack(chunked, axis=-1)
+
 class LogModel:
-    def __init__(self, log_store, n_units=1000, tr_sq_ln=100, gpu=-1, directory=''):
+    def __init__(self, log_store, lstm = 2, n_units=1000, tr_sq_ln=100, gpu=-1, directory=''):
         self.log_store = log_store
         self.n_units= n_units
         self.tr_sq_ln = tr_sq_ln
@@ -18,10 +23,8 @@ class LogModel:
         self.dir = directory
         self.current_epoch = 0
         self.chunk_num = 10
-        self.train_seq = log_store.training_seq(self.chunk_num)
-        self.test_seq = log_store.test_seq(self.chunk_num)
 
-        self.model = LogLSTM(log_store.index_units, log_store.value_units, self.n_units)
+        self.model = LogLSTM(lstm, log_store.position_units, log_store.value_units, self.n_units)
 
     def train(self, epoch):
         if self.current_epoch >= epoch:

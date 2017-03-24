@@ -21,6 +21,8 @@ if __name__ == '__main__':
                         help='Number of n_units')
     parser.add_argument('--iter', '-i', type=int, default=40,
                     help='Number of epochs')
+    parser.add_argument('--lstm', '-s', type=int, default=2,
+                    help='the height of stacked LSTMs')
     parser.add_argument('--cont', '-c', default=False,
                 help='Continue to learn')
     parser.add_argument('logfile', metavar='F', help='Normal log file')
@@ -46,7 +48,7 @@ if __name__ == '__main__':
 
     if args.cont:
         for epoch in range(args.iter, 0, -1):
-            log_model_name = logname + "-model-{}-{}".format(args.n_units, epoch)
+            log_model_name = logname + "-model-{}-{}-{}".format(args.lstm, args.n_units, epoch)
             model_path = (Path('output') / log_model_name).with_suffix('.pickle')
             if model_path.exists():
                 break
@@ -55,9 +57,9 @@ if __name__ == '__main__':
             with open(model_path, 'rb') as modelfile:
                 log_model = pickle.load(modelfile)
         else:
-            log_model = LogModel(log_store, args.n_units, gpu=args.gpu, directory='output/')
+            log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/')
     else:
-        log_model = LogModel(log_store, args.n_units, gpu=args.gpu, directory='output/')
+        log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/')
 
     if log_model.current_epoch == args.iter:
         pass

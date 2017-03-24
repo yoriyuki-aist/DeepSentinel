@@ -58,7 +58,6 @@ discrete_labels = [
 ('P6', 'P602'),
 ('P6', 'P603'),]
 
-
 class LogStore:
     def __init__(self, filename):
         self.log = pd.read_excel(filename, header=[0, 1])
@@ -68,31 +67,10 @@ class LogStore:
         zscore = lambda x: (x - x.mean()) / x.std()
         values = self.log[value_labels].apply(zscore)
         values.fillna(0)
+        self.values_seq = values.values
 
-        indices = self.log[discrete_labels]
-        index_dummies = [pd.get_dummies(indices[label]).values for label in discrete_labels]
-        indices = []
-        for index_dummy in index_dummies:
-            num = index_dummy.shape[0]
-            pad_width = 3 - index_dummy.shape[1]
-            padded = np.pad(index_dummy, ((0, 0), (0, pad_width)), mode='constant', constant_values=0)
-            indices.append(padded)
-        index_seq = np.concatenate(indices, axis=1)
+        positions = self.log[discrete_labels]
+        self.positions_seq = positions.values
 
+        self.position_units = len(discrete_labels)
         self.value_units = len(value_labels)
-        self.index_units = index_seq.shape[1]
-        self.seq = np.concatenate((index_seq, values.values), axis=1)
-
-    def batch_seq(self, chunk_num, start, stop):
-        seq = self.seq[0:len(self.seq) // chunk_num * chunk_num]
-        chunked = np.split(seq, chunk_num)
-        return np.stack(chunked, axis=-1)
-
-    def training_seq(self, chunk_num):
-        return self.batch_seq(chunk_num, 0, chunk_num-1)
-
-    def test_seq(self, chunk_num):
-        return self.batch_seq(chunk_num, chunk_num-1, chunk_num)
-
-    def eval_seq(self, chunk_num):
-        return self.batch_seq(1, 0, 1)
