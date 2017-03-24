@@ -3,4 +3,4 @@
 *.jar
 *.pyc
 data/*
-output/*
+output*/*
