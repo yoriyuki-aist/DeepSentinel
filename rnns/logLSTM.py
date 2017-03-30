@@ -15,7 +15,7 @@ class LogLSTM(chainer.Chain):
             output_pos_layers.add_link(L.Bilinear(position_num, n_units, n_units + position_num))
 
         output_val_layers = chainer.ChainList()
-        for i in range(value_units - 2):
+        for i in range(value_units - 1):
             output_val_layers.add_link(L.Bilinear(1, n_units, n_units + 2))
 
         super(LogLSTM, self).__init__(
@@ -38,7 +38,7 @@ class LogLSTM(chainer.Chain):
             self.lstms[i].reset_state()
 
     def __call__(self, data):
-        loss = 0
+        loss = 0.0
 
         for cur, nt in data:
             loss += self.eval(cur, nt, volatile='off', train=True)
@@ -67,29 +67,31 @@ class LogLSTM(chainer.Chain):
         ps_true = Variable(xp.array(positions_nt.T, dtype=xp.int32))
         ps_true_dm = F.embed_id(ps_true, identity_matrix)
         ps_true_dm = F.reshape(ps_true_dm, (ps_true_dm.shape[0], self.position_num * self.position_units))
+        ps_true_dm = F.split_axis(ps_true_dm, self.position_units, 1)
         for i in range(self.position_units - 1):
-            p_true_dm = F.split_axis(ps_true_dm, [1 + self.position_num * i, 1 + self.position_num * (i+1)], 1)[1]
-            y, p_out = F.split_axis(self.output_pos_layers[i](p_true_dm, y), [self.n_units], 1)
+            y, p_out = F.split_axis(self.output_pos_layers[i](ps_true_dm[i], y), [self.n_units], 1)
             y_pos.append(p_out)
 
-        p_true_dm = F.split_axis(ps_true_dm, [1 + self.position_num * i, 1 + self.position_num * (i + 1)], 1)[1]
+        p_true_dm = ps_true_dm[-1]
         y_val = []
         y = self.output_lastpos(p_true_dm, y)
         vs_true = Variable(xp.array(values_nt.T, dtype=xp.float32))
-        for i in range(self.value_units - 2):
+        vs_true = F.split_axis(vs_true, self.value_units, 1)
+        for i in range(self.value_units - 1):
             y, val_out = F.split_axis(y, [self.n_units], 1)
             y_val.append(val_out)
-            v_true = F.split_axis(vs_true, [1+i, 2+i], 1)[1]
-            y = self.output_val_layers[i](v_true, y)
+            y = self.output_val_layers[i](vs_true[i], y)
         y, val_out = F.split_axis(y, [self.n_units], 1)
         y_val.append(val_out)
         y_val.append(self.output_last_value(y))
 
         loss = 0.0
+        ps_true = F.split_axis(ps_true, self.position_units, 1)
         for i in range(self.position_units):
-            loss += F.softmax_cross_entropy(y_pos[i], p_true[i], use_cudnn=False)
+            loss += F.softmax_cross_entropy(y_pos[i], F.flatten(ps_true[i]), use_cudnn=False)
 
         for i in range(self.value_units):
-            loss += F.gaussian_nnll(vs_true[i], y_val[i][0], y_val[i][1])
+            val_out = F.split_axis(y_val[i], 1, 1)
+            loss += F.gaussian_nll(F.flatten(vs_true[i]), val_out[:,  0], val_out[:, 1])
 
         return loss

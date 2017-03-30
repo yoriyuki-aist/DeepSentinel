@@ -38,18 +38,19 @@ class LogModel:
             optimizer = optimizers.Adam()
             optimizer.setup(model)
 
-            ps_seq = batch_seq(self.log_store.positions_seq, self.chunk_num)
-            vs_seq = batch_seq(self.log_store.values_seq, self.chunk_num)
-            ps_cur = ps_seq[:-1]
-            vs_cur = vs_seq[:-1]
-            cur = zip(ps_cur, vs_cur)
-            ps_nt = ps_seq[1:]
-            vs_nt = vs_seq[1:]
-            nt = zip(ps_nt, vs_nt)
-            data = zip(cur, nt)
-
             for j in tqdm(range(self.current_epoch+1, epoch+1)):
                 model.reset_state()
+
+                ps_seq = batch_seq(self.log_store.positions_seq, self.chunk_num)
+                vs_seq = batch_seq(self.log_store.values_seq, self.chunk_num)
+                ps_cur = ps_seq[:-1]
+                vs_cur = vs_seq[:-1]
+                cur = zip(ps_cur, vs_cur)
+                ps_nt = ps_seq[1:]
+                vs_nt = vs_seq[1:]
+                nt = zip(ps_nt, vs_nt)
+                data = zip(cur, nt)
+
                 loss_sum = 0
                 for k in tqdm(range(0, len(ps_seq) - 1, self.tr_sq_ln)):
                     model.cleargrads()
