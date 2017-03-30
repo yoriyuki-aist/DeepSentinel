@@ -62,7 +62,7 @@ class LogModel:
                     loss_sum += loss.data
 
                 with open(self.dir+"stat-{}-{}.csv".format(self.log_store.filename, self.n_units),'a') as statfile:
-                    print(j, ',',  2**loss_sum, file=statfile)
+                    print(j, ',',  loss_sum, file=statfile)
 
                 self.save()
 

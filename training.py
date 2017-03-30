@@ -8,6 +8,7 @@ import os
 import sys
 from storages import log_store
 from storages.log_store import LogStore
+import log_model
 from log_model import logModel
 from log_model.logModel import LogModel
 
@@ -41,8 +42,9 @@ if __name__ == '__main__':
     logstore = (Path('output') / logname).with_suffix('.pickle')
 
     print("loading log file...")
-    with logstore.open(mode='rb') as logstorefile:
-        log_store = pickle.load(logstorefile)
+    if logstore.exists():
+        with logstore.open(mode='rb') as logstorefile:
+            log_store = pickle.load(logstorefile)
 
     print("start learning...")
 
