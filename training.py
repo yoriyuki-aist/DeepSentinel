@@ -56,7 +56,7 @@ if __name__ == '__main__':
                 break
 
         if model_path.exists():
-            with open(model_path, 'rb') as modelfile:
+            with model_path.open(mode='rb') as modelfile:
                 log_model = pickle.load(modelfile)
         else:
             log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/')

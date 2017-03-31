@@ -15,7 +15,7 @@ def batch_seq(seq, chunk_num):
     return np.stack(chunked, axis=-1)
 
 class LogModel:
-    def __init__(self, log_store, lstm = 2, n_units=1000, tr_sq_ln=100, gpu=-1, directory=''):
+    def __init__(self, log_store, lstm_num = 1, n_units=1000, tr_sq_ln=100, gpu=-1, directory=''):
         self.log_store = log_store
         self.n_units= n_units
         self.tr_sq_ln = tr_sq_ln
@@ -23,8 +23,9 @@ class LogModel:
         self.dir = directory
         self.current_epoch = 0
         self.chunk_num = 10
+        self.lstm_num = lstm_num
 
-        self.model = LogLSTM(lstm, 3, log_store.position_units, log_store.value_units, self.n_units)
+        self.model = LogLSTM(lstm_num, 3, log_store.position_units, log_store.value_units, self.n_units)
 
     def train(self, epoch):
         if self.current_epoch >= epoch:
@@ -61,9 +62,9 @@ class LogModel:
                     optimizer.update()
                     loss_sum += loss.data
 
-                with open(self.dir+"{}-stat-{}-{}.csv".format(self.log_store.filename, self.lstm, self.n_units),'a') as statfile:
+                with open(self.dir+"{}-stat-{}-{}.csv".format(self.log_store.filename, self.lstm_num, self.n_units),'a') as statfile:
                     print(j, ',',  loss_sum, file=statfile)
-
+                self.current_epoch = j
                 self.save()
 
     def _eval(self, seq):
@@ -84,5 +85,5 @@ class LogModel:
         return sum_loss / len(seq)
 
     def save(self):
-        with open(self.dir+"{}-model-{}-{}-{}.pickle".format(self.log_store.filename, self.lstm, self.n_units, self.current_epoch), 'wb') as f:
+        with open(self.dir+"{}-model-{}-{}-{}.pickle".format(self.log_store.filename, self.lstm_num, self.n_units, self.current_epoch), 'wb') as f:
             pickle.dump(self, f)

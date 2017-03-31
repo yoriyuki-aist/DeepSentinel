@@ -68,25 +68,24 @@ class LogLSTM(chainer.Chain):
         ps_true_dm = F.reshape(ps_true_dm, (ps_true_dm.shape[0], self.position_num * self.position_units))
         ps_true_dm = F.split_axis(ps_true_dm, self.position_units, 1)
         for i in range(self.position_units - 1):
-            z = F.dropout(self.output_pos_layers[i](ps_true_dm[i], y), train=train)
+            z = self.output_pos_layers[i](ps_true_dm[i], y)
             y, p_out = F.split_axis(z, [self.n_units], 1)
-            y = F.sigmoid(y)
+            y = F.dropout(F.sigmoid(y), train=train)
             y_pos.append(p_out)
 
         p_true_dm = ps_true_dm[-1]
         y_val = []
-        y = F.dropout(self.output_lastpos(p_true_dm, y), train=train)
-        y = F.sigmoid(y)
+        y = self.output_lastpos(p_true_dm, y)
         vs_true = Variable(xp.array(values_nt.T, dtype=xp.float32))
         vs_true = F.split_axis(vs_true, self.value_units, 1)
         for i in range(self.value_units - 1):
             y, val_out = F.split_axis(y, [self.n_units], 1)
             y_val.append(val_out)
-            y = F.sigmoid(y)
-            y = F.dropout(self.output_val_layers[i](vs_true[i], y), train=train)
+            y = F.dropout(F.sigmoid(y), train=train)
+            y = self.output_val_layers[i](vs_true[i], y)
         y, val_out = F.split_axis(y, [self.n_units], 1)
         y_val.append(val_out)
-        y_val.append(self.output_last_value(F.sigmoid(F.dropout(y, train=train))))
+        y_val.append(self.output_last_value(F.dropout(F.sigmoid(y), train=train)))
 
         loss = 0.0
         ps_true = F.split_axis(ps_true, self.position_units, 1)
