@@ -61,7 +61,7 @@ class LogModel:
                     optimizer.update()
                     loss_sum += loss.data
 
-                with open(self.dir+"stat-{}-{}.csv".format(self.log_store.filename, self.n_units),'a') as statfile:
+                with open(self.dir+"{}-stat-{}-{}.csv".format(self.log_store.filename, self.lstm, self.n_units),'a') as statfile:
                     print(j, ',',  loss_sum, file=statfile)
 
                 self.save()
@@ -84,5 +84,5 @@ class LogModel:
         return sum_loss / len(seq)
 
     def save(self):
-        with open(self.dir+"{}-model-{}-{}.pickle".format(self.log_store.filename, self.n_units, self.current_epoch), 'wb') as f:
+        with open(self.dir+"{}-model-{}-{}-{}.pickle".format(self.log_store.filename, self.lstm, self.n_units, self.current_epoch), 'wb') as f:
             pickle.dump(self, f)
