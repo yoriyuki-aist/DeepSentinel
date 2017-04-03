@@ -1,2 +1,7 @@
 #!/bin/bash
-seq $2 $3 $4 | xargs -I "{}" python training.py --iter $5 -n "{}" --lstm 1 -g 0 -c true  $1
+TARGET=$1
+START=$2
+STEP=$3
+FINISH=$4
+shift 4
+seq $START $STEP $FINISH | xargs -I "{}" python training.py -n "{}" $* $TARGET
