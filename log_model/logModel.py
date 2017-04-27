@@ -8,6 +8,7 @@ from chainer import cuda, optimizers
 from rnns import logLSTM
 from rnns.logLSTM import LogLSTM
 from tqdm import tqdm
+import sys
 
 def batch_seq(seq, chunk_num):
     seq = seq[0:len(seq) // chunk_num * chunk_num]
@@ -68,22 +69,20 @@ class LogModel:
                 self.save()
 
     def _eval(self, seq):
-        self.model.reset_state()
-        cur, nt = itertools.tee(seq)
-        nt = itertools.islice(nt, 1, None)
-        data = zip(cur, nt)
-        return (self.model.eval(cur, nt, volatile='on').data for cur, nt in data)
+        sys.exit('logModel._eval is no longer implemented.')
 
-    def eval(self, seq, filename):
-        count = 0
-        sum_loss = 0
-        with open(self.dir+"{}-{}-{}.csv".format(filename, self.n_units, self.current_epoch), 'w') as f:
-            for outlier_factor in self._eval(tqdm(seq)):
-                sum_loss += outlier_factor
-                print(outlier_factor, file=f)
-                count += 1
-        return sum_loss / len(seq)
+    def eval(self, ps_seq, vs_seq):
+        ps_cur = ps_seq[:-1]
+        vs_cur = vs_seq[:-1]
+        cur = zip(ps_cur, vs_cur)
+        ps_nt = ps_seq[1:]
+        vs_nt = vs_seq[1:]
+        nt = zip(ps_nt, vs_nt)
+        data = tqdm(zip(cur, nt))
 
+        model.reset_state()
+        return (model.eval(cur, nt) for cur, nt in data)
+        
     def save(self):
         with open(self.dir+"{}-model-{}-{}-{}.pickle".format(self.log_store.filename, self.lstm_num, self.n_units, self.current_epoch), 'wb') as f:
             pickle.dump(self, f)
