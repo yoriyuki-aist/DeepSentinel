@@ -59,13 +59,17 @@ discrete_labels = [
 ('P6', 'P603'),]
 
 class LogStore:
-    def __init__(self, filename):
+    def __init__(self, filename, normal=None):
         self.log = pd.read_excel(filename, header=[0, 1])
         self.log.index = self.log.index.to_datetime()
         self.filename = Path(filename).stem
 
-        zscore = lambda x: (x - x.mean()) / x.std()
-        values = self.log[value_labels].apply(zscore)
+        if normal is None:
+            zscore = lambda x: (x - x.mean()) / x.std()
+            values = self.log[value_labels].apply(zscore)
+        else:
+            zscore = lambda x: (x - normal.log[x.name].mean()) / normal.log[x.name].std()
+            values = self.log[value_labels].apply(zscore)
         values.fillna(0)
         self.values_seq = values.values
 

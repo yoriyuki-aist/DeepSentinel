@@ -9,13 +9,17 @@ from storages.log_store import LogStore
 import log_model
 from log_model import logModel
 from log_model.logModel import LogModel
+import numpy as np
+import pandas as pd
+from sklearn import metrics
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Compute outlier factors and evaluate them')
-    parser.add_argument('model', metavar='Model file', help='Model file')
-    parser.add_argument('target', metavar='Target', help='Log to be analyzed')
-    parser.add_argument('output', metavar='Output', help='Ooutput')
+    parser.add_argument('normal', metavar='NormalLog', help='Normal log')
+    parser.add_argument('model', metavar='Modelile', help='Model file')
+    parser.add_argument('logfile', metavar='Target', help='Log to be analyzed')
+    parser.add_argument('output', metavar='Output', help='Output')
 
     args = parser.parse_args()
 
@@ -34,6 +38,18 @@ if __name__ == '__main__':
         if not Path('output').is_dir():
             sys.exit('output is not a directory.')
 
+    normallogname = Path(args.normal).stem
+    normallogstore = (Path('output') / normallogname).with_suffix('.pickle')
+
+    print("loading log file...")
+    if normallogstore.exists():
+        with normallogstore.open(mode='rb') as normallogstorefile:
+            normal_log_store = pickle.load(normallogstorefile)
+    else:
+        normal_log_store = LogStore(args.normal)
+        with normallogstore.open(mode='wb') as f:
+            pickle.dump(normal_log_store, f)
+
     logname = Path(args.logfile).stem
     logstore = (Path('output') / logname).with_suffix('.pickle')
 
@@ -42,19 +58,23 @@ if __name__ == '__main__':
         with logstore.open(mode='rb') as logstorefile:
             log_store = pickle.load(logstorefile)
     else:
-        log_store = LogStore(args.logfile)
+        log_store = LogStore(args.logfile, normal_log_store)
+        with logstore.open(mode='wb') as f:
+            pickle.dump(log_store, f)
 
     print("start evaluating...")
-    scores = np.fromiter(log_model.eval(log_store.position_seq, log_store.values_seq), np.float32)
-    log = logstore.log
-    log['score'] = pd.Series(scores).shift(1)
+    scores = list(log_model.eval(log_store.positions_seq, log_store.values_seq))
+    scores = np.array(scores, np.float32)
+    log = log_store.log
+    log['score'] = pd.Series(scores, log.index[:-1]).shift(1)
     log = log.dropna(axis=0)
 
-    normal_dummy = pd.get_dummies(log['Normal/Attack'])['Normal']
+    n_a = log[('P6','Normal/Attack')]
+    normal_dummy = pd.get_dummies(n_a)['Normal']
     log['Normal'] = normal_dummy
     log['Attack'] = 1 - normal_dummy
 
-    log = log.sort_value(by='score', ascending=False)
+    log = log.sort_values(by='score', ascending=False)
 
     correct_detection = log['Attack'].cumsum()
     false_detection = log['Normal'].cumsum()
@@ -71,6 +91,7 @@ if __name__ == '__main__':
     log['f_value'] = f_value
 
     max_f_index = f_value.idxmax()
+    print(max_f_index)
     k = log['score'].loc[max_f_index]
     f = log['f_value'].loc[max_f_index]
     p = log['precision'].loc[max_f_index]
