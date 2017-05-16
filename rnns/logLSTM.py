@@ -50,12 +50,12 @@ class LogLSTM(chainer.Chain):
         positions_cur, values_cur = cur
         positions_nt, values_nt = nt
 
-        ps_in = Variable(xp.array(positions_cur.T, dtype=xp.int32))
-        identity_matrix = Variable(xp.identity(self.position_num, dtype=xp.float32))
+        ps_in = Variable(xp.array(positions_cur.T, dtype=xp.int32), volatile=volatile)
+        identity_matrix = Variable(xp.identity(self.position_num, dtype=xp.float32), volatile=volatile)
         ps_in_dm = F.embed_id(ps_in, identity_matrix)
         ps_in_dm = F.reshape(ps_in_dm, (ps_in_dm.shape[0], self.position_num * self.position_units))
 
-        vs_in = Variable(xp.array(values_cur.T, dtype=xp.float32))
+        vs_in = Variable(xp.array(values_cur.T, dtype=xp.float32), volatile=volatile)
         h = F.dropout(self.input_layer(F.concat((ps_in_dm,vs_in))), train=train)
         for i in range(self.lstm_num):
             h = F.dropout(self.lstms[i](h), train=train)
@@ -63,7 +63,7 @@ class LogLSTM(chainer.Chain):
         y = h
         y_pos = []
         y_pos.append(self.output_pos1(y))
-        ps_true = Variable(xp.array(positions_nt.T, dtype=xp.int32))
+        ps_true = Variable(xp.array(positions_nt.T, dtype=xp.int32), volatile=volatile)
         ps_true_dm = F.embed_id(ps_true, identity_matrix)
         ps_true_dm = F.reshape(ps_true_dm, (ps_true_dm.shape[0], self.position_num * self.position_units))
         ps_true_dm = F.split_axis(ps_true_dm, self.position_units, 1)
@@ -76,7 +76,7 @@ class LogLSTM(chainer.Chain):
         p_true_dm = ps_true_dm[-1]
         y_val = []
         y = self.output_lastpos(p_true_dm, y)
-        vs_true = Variable(xp.array(values_nt.T, dtype=xp.float32))
+        vs_true = Variable(xp.array(values_nt.T, dtype=xp.float32), volatile=volatile)
         vs_true = F.split_axis(vs_true, self.value_units, 1)
         for i in range(self.value_units - 1):
             y, val_out = F.split_axis(y, [self.n_units], 1)

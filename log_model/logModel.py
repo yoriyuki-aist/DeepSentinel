@@ -76,16 +76,18 @@ class LogModel:
         sys.exit('logModel._eval is no longer implemented.')
 
     def eval(self, ps_seq, vs_seq):
-        ps_cur = ps_seq[:-1]
+        ps_seq = batch_seq(ps_seq, 1)
+        vs_seq = batch_seq(vs_seq, 1)
+        ps_cur = tqdm(ps_seq[:-1])
         vs_cur = vs_seq[:-1]
         cur = zip(ps_cur, vs_cur)
         ps_nt = ps_seq[1:]
         vs_nt = vs_seq[1:]
         nt = zip(ps_nt, vs_nt)
-        data = tqdm(zip(cur, nt))
+        data = zip(cur, nt)
 
         self.model.reset_state()
-        return (self.model.eval(cur, nt) for cur, nt in data)
+        return (self.model.eval(cur, nt).data for cur, nt in data)
 
     def save(self):
         filename = self.dir+"{}-model-{}-{}-{}-lstms.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.current_epoch)
