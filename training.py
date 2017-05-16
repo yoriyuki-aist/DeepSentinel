@@ -48,20 +48,19 @@ if __name__ == '__main__':
 
     print("start learning...")
 
+    logLSTM_file = None
     if args.cont:
         for epoch in range(args.iter, 0, -1):
-            log_model_name = logname + "-model-{}-{}-{}".format(args.lstm, args.n_units, epoch)
-            model_path = (Path('output') / log_model_name).with_suffix('.pickle')
+            log_model_name = logname + "-model-{}-{}-{}-lstms".format(args.lstm, args.n_units, epoch)
+            model_path = (Path('output') / log_model_name).with_suffix('.npz')
             if model_path.exists():
-                break
+                logLSTM_file = model_path.as_posix()
 
-        if model_path.exists():
-            with model_path.open(mode='rb') as modelfile:
-                log_model = pickle.load(modelfile)
-        else:
-            log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/')
-    else:
-        log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/')
+                optimizer_name = logname + "-model-{}-{}-{}-optimizer".format(args.lstm, args.n_units, epoch)
+                optimizer_path = (Path('output') / optimizer_name).with_suffix('.npz')
+                if optimizer_path.exists():
+                    optimizer_file = optimizer_path.as_posix()
+    log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=logLSTM_file, optimizer_file=optimizer_file)
 
     if log_model.current_epoch == args.iter:
         pass

@@ -4,7 +4,7 @@ import functools
 import chainer
 import math
 import numpy as np
-from chainer import cuda, optimizers
+from chainer import cuda, optimizers, serializers
 from rnns import logLSTM
 from rnns.logLSTM import LogLSTM
 from tqdm import tqdm
@@ -16,7 +16,7 @@ def batch_seq(seq, chunk_num):
     return np.stack(chunked, axis=-1)
 
 class LogModel:
-    def __init__(self, log_store, lstm_num = 1, n_units=1000, tr_sq_ln=100, gpu=-1, directory=''):
+    def __init__(self, log_store, lstm_num = 1, n_units=1000, tr_sq_ln=100, gpu=-1, directory='', logLSTM_file=None, optimizer_file=None):
         self.log_store = log_store
         self.n_units= n_units
         self.tr_sq_ln = tr_sq_ln
@@ -27,18 +27,22 @@ class LogModel:
         self.lstm_num = lstm_num
 
         self.model = LogLSTM(lstm_num, 3, log_store.position_units, log_store.value_units, self.n_units)
+        if not logLSTM_file is None:
+            serializers.load_npz(logLSTM_file, self.model)
+        if self.gpu >= 0:
+            cuda.get_device(self.gpu).use()
+            self.model.to_gpu()
+
+        self.optimizer = optimizers.Adam()
+        if not optimizer_file is None:
+            serializers.load_npz(optimizer_file, self.optimizer)
 
     def train(self, epoch):
         if self.current_epoch >= epoch:
             pass
         else:
             model = self.model
-            if self.gpu >= 0:
-                cuda.get_device(self.gpu).use()
-                model.to_gpu()
-
-            optimizer = optimizers.Adam()
-            optimizer.setup(model)
+            optimizer = self.optimizers
 
             for j in tqdm(range(self.current_epoch+1, epoch+1)):
                 model.reset_state()
@@ -80,9 +84,11 @@ class LogModel:
         nt = zip(ps_nt, vs_nt)
         data = tqdm(zip(cur, nt))
 
-        model.reset_state()
-        return (model.eval(cur, nt) for cur, nt in data)
-        
+        self.model.reset_state()
+        return (self.model.eval(cur, nt) for cur, nt in data)
+
     def save(self):
-        with open(self.dir+"{}-model-{}-{}-{}.pickle".format(self.log_store.filename, self.lstm_num, self.n_units, self.current_epoch), 'wb') as f:
-            pickle.dump(self, f)
+        filename = self.dir+"{}-model-{}-{}-{}-lstms.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.current_epoch)
+            serializers.save_npz(filename, self.model)
+        filename = self.dir+"{}-model-{}-{}-{}-optimizer.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.current_epoch)
+            serializers.save_npz(filename, self.optimizer)
