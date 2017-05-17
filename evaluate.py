@@ -20,18 +20,15 @@ if __name__ == '__main__':
     parser.add_argument('model', metavar='Modelile', help='Model file')
     parser.add_argument('logfile', metavar='Target', help='Log to be analyzed')
     parser.add_argument('output', metavar='Output', help='Output')
-
+    parser.add_argument('--gpu', '-g', type=int, default=-1,
+                        help='GPU ID (negative value indicates CPU)')
+    parser.add_argument('--n_units', '-n', type=int, default=0,
+                        help='Number of n_units')
+    parser.add_argument('--lstm', '-s', type=int, default=0,
+                    help='the height of stacked LSTMs')
     args = parser.parse_args()
 
-
-    if not Path(args.model).exists():
-        sys.exit('model does not exists.')
-    else:
-        with Path(args.model).open(mode='rb') as modelfile:
-            print("loading model file...")
-            log_model = pickle.load(modelfile)
-
-    print('loading target log file')
+    print('Creating output directory...')
     if not Path('output').exists():
         os.mkdir('output')
     else:
@@ -41,7 +38,7 @@ if __name__ == '__main__':
     normallogname = Path(args.normal).stem
     normallogstore = (Path('output') / normallogname).with_suffix('.pickle')
 
-    print("loading log file...")
+    print("loading normal log file...")
     if normallogstore.exists():
         with normallogstore.open(mode='rb') as normallogstorefile:
             normal_log_store = pickle.load(normallogstorefile)
@@ -62,18 +59,24 @@ if __name__ == '__main__':
         with logstore.open(mode='wb') as f:
             pickle.dump(log_store, f)
 
+    print('loading model file...')
+    if not Path(args.model).exists():
+        sys.exit('model does not exists.')
+    else:
+        log_model = LogModel(log_store, lstm_num=args.lstm, n_units=args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=args.model)
+
     print("start evaluating...")
     scores = list(log_model.eval(log_store.positions_seq, log_store.values_seq))
     scores = np.array(scores, np.float32)
     log = log_store.log
     log['score'] = pd.Series(scores, log.index[:-1]).shift(1)
-    log = log.dropna(axis=0)
 
     n_a = log[('P6','Normal/Attack')]
     normal_dummy = pd.get_dummies(n_a)['Normal']
     log['Normal'] = normal_dummy
     log['Attack'] = 1 - normal_dummy
 
+    print(log)
     log = log.sort_values(by='score', ascending=False)
 
     correct_detection = log['Attack'].cumsum()

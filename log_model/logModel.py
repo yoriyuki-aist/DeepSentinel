@@ -16,13 +16,13 @@ def batch_seq(seq, chunk_num):
     return np.stack(chunked, axis=-1)
 
 class LogModel:
-    def __init__(self, log_store, lstm_num = 1, n_units=1000, tr_sq_ln=100, gpu=-1, directory='', logLSTM_file=None, optimizer_file=None):
+    def __init__(self, log_store, lstm_num = 1, n_units=1000, tr_sq_ln=100, gpu=-1, directory='', logLSTM_file=None, optimizer_file=None, current_epoch=0):
         self.log_store = log_store
         self.n_units= n_units
         self.tr_sq_ln = tr_sq_ln
         self.gpu = gpu
         self.dir = directory
-        self.current_epoch = 0
+        self.current_epoch = current_epoch
         self.chunk_num = 10
         self.lstm_num = lstm_num
 
@@ -34,15 +34,17 @@ class LogModel:
             self.model.to_gpu()
 
         self.optimizer = optimizers.Adam()
+        self.optimizer.setup(self.model)
         if not optimizer_file is None:
             serializers.load_npz(optimizer_file, self.optimizer)
+
 
     def train(self, epoch):
         if self.current_epoch >= epoch:
             pass
         else:
             model = self.model
-            optimizer = self.optimizers
+            optimizer = self.optimizer
 
             for j in tqdm(range(self.current_epoch+1, epoch+1)):
                 model.reset_state()
@@ -91,6 +93,6 @@ class LogModel:
 
     def save(self):
         filename = self.dir+"{}-model-{}-{}-{}-lstms.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.current_epoch)
-            serializers.save_npz(filename, self.model)
+        serializers.save_npz(filename, self.model)
         filename = self.dir+"{}-model-{}-{}-{}-optimizer.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.current_epoch)
-            serializers.save_npz(filename, self.optimizer)
+        serializers.save_npz(filename, self.optimizer)
