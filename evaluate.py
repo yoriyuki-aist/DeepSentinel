@@ -76,7 +76,6 @@ if __name__ == '__main__':
     log['Normal'] = normal_dummy
     log['Attack'] = 1 - normal_dummy
 
-    print(log)
     log = log.sort_values(by='score', ascending=False)
 
     correct_detection = log['Attack'].cumsum()
