@@ -3,7 +3,11 @@ import numpy as np
 import itertools
 import operator
 from pathlib import Path
+import re
+from tqdm import tqdm
 
+# labels for real swat log
+# simulated log does not have labels
 value_labels = [('P1', 'FIT101'),
 ('P1', 'LIT101'),
 ('P2', 'AIT201'),
@@ -58,23 +62,51 @@ discrete_labels = [
 ('P6', 'P602'),
 ('P6', 'P603'),]
 
+
 class LogStore:
-    def __init__(self, filename, normal=None):
-        self.log = pd.read_excel(filename, header=[0, 1])
-        self.log.index = self.log.index.to_datetime()
-        self.filename = Path(filename).stem
+    def __init__(self, filename, normal=None, simulated=False, filenames=None):
+        if simulated:
+            self.filename = filename
+            logs = []
+            for path in tqdm(filenames):
+                with open(path) as f:
+                    log = []
+                    for line in tqdm(f):
+                        log.append(re.findall('[0-9.]+', line))
+                    log = np.array(log, dtype=np.float32)
+                    logs.append(log)
+            concat = np.concatenate(logs)
+            if normal is None:
+                self.means = np.mean(concat, axis=0)
+                self.stds = np.std(concat, axis=0)
+                logs = [(log - self.means) / self.stds for log in logs]
+            else:
+                logs = [(log - normal.means) / normal.stds for log in logs]
+            self.values_seq = np.stack(logs, axis=-1)
+            self.position_units = 0
+            self.value_units = logs[0].shape[1]
 
-        if normal is None:
-            zscore = lambda x: (x - x.mean()) / x.std()
-            values = self.log[value_labels].apply(zscore)
         else:
-            zscore = lambda x: (x - normal.log[x.name].mean()) / normal.log[x.name].std()
-            values = self.log[value_labels].apply(zscore)
-        values.fillna(0)
-        self.values_seq = values.values
+            log = pd.read_excel(filename, header=[0, 1])
+            log.index = self.log.index.to_datetime()
+            self.filename = Path(filename).stem
 
-        positions = self.log[discrete_labels]
-        self.positions_seq = positions.values
+            positions = self.log[discrete_labels]
+            self.positions_seq = positions.values
 
-        self.position_units = len(discrete_labels)
-        self.value_units = len(value_labels)
+            #FIXME use a common code with for the simulated log
+            if normal is None:
+                self.means = [log.mean(label) for label in value_labels]
+                self.stds = [log.std(label) for label in value_labels]
+                zscore = lambda x: (x - self.means[x.name]) / self.stds[x.name]
+                values = log[value_labels].apply(zscore)
+            else:
+                zscore = lambda x: (x - normal.means[x.name]) / normal.stds[x.name]
+                values = log[value_labels].apply(zscore)
+            values.fillna(0)
+
+            #FIXME Need chunking here
+            self.values_seq = values.values
+
+            self.position_units = len(discrete_labels)
+            self.value_units = len(value_labels)
