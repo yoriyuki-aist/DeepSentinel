@@ -6,6 +6,11 @@ from pathlib import Path
 import re
 from tqdm import tqdm
 
+def batch_seq(seq, chunk_num):
+    seq = seq[0:len(seq) // chunk_num * chunk_num]
+    chunked = np.split(seq, chunk_num)
+    return np.stack(chunked, axis=-1)
+
 # labels for real swat log
 # simulated log does not have labels
 value_labels = [('P1', 'FIT101'),
@@ -82,6 +87,7 @@ class LogStore:
                 logs = [(log - self.means) / self.stds for log in logs]
             else:
                 logs = [(log - normal.means) / normal.stds for log in logs]
+            self.positions_seq = None
             self.values_seq = np.stack(logs, axis=-1)
             self.position_units = 0
             self.value_units = logs[0].shape[1]

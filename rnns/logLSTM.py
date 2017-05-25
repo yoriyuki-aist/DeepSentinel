@@ -24,6 +24,7 @@ class LogLSTM(chainer.Chain):
             output_pos1 = L.Linear(n_units, position_num),
             output_pos_layers = output_pos_layers,
             output_lastpos = L.Bilinear(position_num, n_units, n_units + 2),
+            output_val1 = L.Linear(n_units, n_units + 2),
             output_val_layers = output_val_layers,
             output_last_value = L.Linear(n_units, 2)
         )
@@ -47,35 +48,49 @@ class LogLSTM(chainer.Chain):
 
     def eval(self, cur, nt, volatile='on', train=False):
         xp = self.xp
-        positions_cur, values_cur = cur
-        positions_nt, values_nt = nt
+        if self.position_units > 0:
+            positions_cur, values_cur = cur
+            positions_nt, values_nt = nt
+        else:
+            values_cur = cur
+            values_nt = nt
 
-        ps_in = Variable(xp.array(positions_cur.T, dtype=xp.int32), volatile=volatile)
-        identity_matrix = Variable(xp.identity(self.position_num, dtype=xp.float32), volatile=volatile)
-        ps_in_dm = F.embed_id(ps_in, identity_matrix)
-        ps_in_dm = F.reshape(ps_in_dm, (ps_in_dm.shape[0], self.position_num * self.position_units))
+        if self.position_units > 0:
+            ps_in = Variable(xp.array(positions_cur.T, dtype=xp.int32), volatile=volatile)
+            identity_matrix = Variable(xp.identity(self.position_num, dtype=xp.float32), volatile=volatile)
+            ps_in_dm = F.embed_id(ps_in, identity_matrix)
+            ps_in_dm = F.reshape(ps_in_dm, (ps_in_dm.shape[0], self.position_num * self.position_units))
 
         vs_in = Variable(xp.array(values_cur.T, dtype=xp.float32), volatile=volatile)
-        h = F.dropout(self.input_layer(F.concat((ps_in_dm,vs_in))), train=train)
+        if self.position_units > 0:
+            inp = F.concat((ps_in_dm,vs_in))
+        else:
+            inp = vs_in
+        h = F.dropout(self.input_layer(inp), train=train)
         for i in range(self.lstm_num):
             h = F.dropout(self.lstms[i](h), train=train)
 
         y = h
-        y_pos = []
-        y_pos.append(self.output_pos1(y))
-        ps_true = Variable(xp.array(positions_nt.T, dtype=xp.int32), volatile=volatile)
-        ps_true_dm = F.embed_id(ps_true, identity_matrix)
-        ps_true_dm = F.reshape(ps_true_dm, (ps_true_dm.shape[0], self.position_num * self.position_units))
-        ps_true_dm = F.split_axis(ps_true_dm, self.position_units, 1)
-        for i in range(self.position_units - 1):
-            z = self.output_pos_layers[i](ps_true_dm[i], y)
-            y, p_out = F.split_axis(z, [self.n_units], 1)
-            y = F.dropout(F.sigmoid(y), train=train)
-            y_pos.append(p_out)
 
-        p_true_dm = ps_true_dm[-1]
+        if self.position_units > 0:
+            y_pos = []
+            y_pos.append(self.output_pos1(y))
+            ps_true = Variable(xp.array(positions_nt.T, dtype=xp.int32), volatile=volatile)
+            ps_true_dm = F.embed_id(ps_true, identity_matrix)
+            ps_true_dm = F.reshape(ps_true_dm, (ps_true_dm.shape[0], self.position_num * self.position_units))
+            ps_true_dm = F.split_axis(ps_true_dm, self.position_units, 1)
+            for i in range(self.position_units - 1):
+                z = self.output_pos_layers[i](ps_true_dm[i], y)
+                y, p_out = F.split_axis(z, [self.n_units], 1)
+                y = F.dropout(F.sigmoid(y), train=train)
+                y_pos.append(p_out)
+
+            p_true_dm = ps_true_dm[-1]
+            y = self.output_lastpos(p_true_dm, y)
+        else:
+            y = self.output_val1(y)
+
         y_val = []
-        y = self.output_lastpos(p_true_dm, y)
         vs_true = Variable(xp.array(values_nt.T, dtype=xp.float32), volatile=volatile)
         vs_true = F.split_axis(vs_true, self.value_units, 1)
         for i in range(self.value_units - 1):
@@ -88,9 +103,11 @@ class LogLSTM(chainer.Chain):
         y_val.append(self.output_last_value(F.dropout(F.sigmoid(y), train=train)))
 
         loss = 0.0
-        ps_true = F.split_axis(ps_true, self.position_units, 1)
-        for i in range(self.position_units):
-            loss += F.softmax_cross_entropy(y_pos[i], F.flatten(ps_true[i]), use_cudnn=False)
+
+        if self.position_units > 0:
+            ps_true = F.split_axis(ps_true, self.position_units, 1)
+            for i in range(self.position_units):
+                loss += F.softmax_cross_entropy(y_pos[i], F.flatten(ps_true[i]), use_cudnn=False)
 
         for i in range(self.value_units):
             val_out = F.split_axis(y_val[i], 1, 1)
