@@ -71,6 +71,10 @@ class LogStore:
             zscore = lambda x: (x - normal.log[x.name].mean()) / normal.log[x.name].std()
             values = self.log[value_labels].apply(zscore)
         values.fillna(0)
+
+        grouped = list(values.groupby(values.index.map(lambda x: x.date())).groups.items())
+
+
         self.values_seq = values.values
 
         positions = self.log[discrete_labels]
