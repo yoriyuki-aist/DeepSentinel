@@ -58,11 +58,22 @@ discrete_labels = [
 ('P6', 'P602'),
 ('P6', 'P603'),]
 
+def batch_seq(seq, chunk_num):
+    seq = seq[0:len(seq) // chunk_num * chunk_num]
+    chunked = np.split(seq, chunk_num)
+    return np.stack(chunked, axis=-1)
+
 class LogStore:
     def __init__(self, filename, normal=None):
-        self.log = pd.read_excel(filename, header=[0, 1])
-        self.log.index = self.log.index.to_datetime()
+        self.position_units = len(discrete_labels)
+        self.value_units = len(value_labels)
         self.filename = Path(filename).stem
+
+        self.log = pd.read_excel(filename, header=[0, 1])
+        self.log.index = pd.to_datetime(self.log.index)
+        self.log['F'] = 1 #the row is filled
+        new_index = pd.date_range(start=self.log.index[0], end=self.log.index[-1], freq='S', normalize=True)
+        self.log = self.log.reindex(new_index)
 
         if normal is None:
             zscore = lambda x: (x - x.mean()) / x.std()
@@ -72,13 +83,27 @@ class LogStore:
             values = self.log[value_labels].apply(zscore)
         values.fillna(0)
 
-        grouped = list(values.groupby(values.index.map(lambda x: x.date())).groups.items())
-
-
-        self.values_seq = values.values
+        grouped = values.groupby(values.index.map(lambda x: x.date()))
+        values_seqs = grouped.apply(lambda x: x.values)
+        rest = list(values_seqs.iloc[:-1])
+        lastday = values_seqs.iloc[-1]
+        self.training_v_seq = np.stack(rest, axis=-1)
+        self.test_v_seq = np.stack([lastday], axis=-1)
 
         positions = self.log[discrete_labels]
-        self.positions_seq = positions.values
+        positions.fillna(0)
+        grouped = positions.groupby(positions.index.map(lambda x: x.date()))
+        positions_seqs = grouped.apply(lambda x: x.values)
+        rest = list(positions_seqs.iloc[:-1])
+        lastday = positions_seqs.iloc[-1]
+        self.training_p_seq = np.stack(rest, axis=-1)
+        self.test_p_seq = np.stack([lastday], axis=-1)
 
-        self.position_units = len(discrete_labels)
-        self.value_units = len(value_labels)
+        filled = self.log['F']
+        filled.fillna(0)
+        grouped = filled.groupby(filled.index.map(lambda x: x.date()))
+        f_seqs = grouped.apply(lambda x: x.values)
+        rest = list(f_seqs.iloc[:-1])
+        lastday = positions_seqs.iloc[-1]
+        self.train_f_seq = np.stack(rest, axis=-1)
+        self.test_f_seq = np.stack([lastday], axis=-1)
