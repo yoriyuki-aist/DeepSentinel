@@ -26,17 +26,16 @@ if __name__ == '__main__':
                     help='the height of stacked LSTMs')
     parser.add_argument('--cont', '-c', default=False,
                 help='Continue to learn')
+    parser.add_argument('--dropout', '-d', type=bool, default=True,     help='Dropout')
     parser.add_argument('logfile', metavar='F', help='Normal log file')
 
     args = parser.parse_args()
-
 
     if not Path('output').exists():
         os.mkdir('output')
     else:
         if not Path('output').is_dir():
             sys.exit('output is not a directory.')
-
 
     logname = Path(args.logfile).stem
     logstore = (Path('output') / logname).with_suffix('.pickle')
@@ -45,6 +44,8 @@ if __name__ == '__main__':
     if logstore.exists():
         with logstore.open(mode='rb') as logstorefile:
             log_store = pickle.load(logstorefile)
+    else:
+        sys.exit(-1)
 
     print("start learning...")
 
@@ -52,17 +53,17 @@ if __name__ == '__main__':
     optimizer_file = None
     if args.cont:
         for epoch in range(args.iter, -1, -1):
-            log_model_name = logname + "-model-{}-{}-{}-lstms".format(args.lstm, args.n_units, epoch)
+            log_model_name = logname + "-model-{}-{}-dropout-{}-{}-lstms".format(args.lstm, args.n_units, args.dropout, epoch)
             model_path = (Path('output') / log_model_name).with_suffix('.npz')
             if model_path.exists():
                 logLSTM_file = model_path.as_posix()
 
-                optimizer_name = logname + "-model-{}-{}-{}-optimizer".format(args.lstm, args.n_units, epoch)
+                optimizer_name = logname + "-model-{}-{}-dropout-{}-{}-optimizer".format(args.lstm, args.n_units, args.dropout, epoch)
                 optimizer_path = (Path('output') / optimizer_name).with_suffix('.npz')
                 if optimizer_path.exists():
                     optimizer_file = optimizer_path.as_posix()
                 break
-    log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=logLSTM_file, optimizer_file=optimizer_file, current_epoch=epoch)
+    log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=logLSTM_file, optimizer_file=optimizer_file, current_epoch=epoch, dropout=args.dropout)
 
     if log_model.current_epoch == args.iter:
         pass

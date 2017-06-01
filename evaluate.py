@@ -43,9 +43,7 @@ if __name__ == '__main__':
         with normallogstore.open(mode='rb') as normallogstorefile:
             normal_log_store = pickle.load(normallogstorefile)
     else:
-        normal_log_store = LogStore(args.normal)
-        with normallogstore.open(mode='wb') as f:
-            pickle.dump(normal_log_store, f)
+        sys.exit(-1)
 
     logname = Path(args.logfile).stem
     logstore = (Path('output') / logname).with_suffix('.pickle')
@@ -66,7 +64,7 @@ if __name__ == '__main__':
         log_model = LogModel(log_store, lstm_num=args.lstm, n_units=args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=args.model)
 
     print("start evaluating...")
-    scores = list(log_model.eval(log_store.positions_seq, log_store.values_seq))
+    scores = list(log_model.eval(log_store.positions))
     scores = np.array(scores, np.float32)
     log = log_store.log
     log['score'] = pd.Series(scores, log.index[:-1]).shift(1)
@@ -91,17 +89,6 @@ if __name__ == '__main__':
     log['recall'] = recall
     log['false_positive'] = fp
     log['f_value'] = f_value
-
-    max_f_index = f_value.idxmax()
-    print(max_f_index)
-    k = log['score'].loc[max_f_index]
-    f = log['f_value'].loc[max_f_index]
-    p = log['precision'].loc[max_f_index]
-    r = log['recall'].loc[max_f_index]
-    print("Threshold: {}, Precision: {}, Recall: {}, F value: {}".format(k, p, r, f))
-
-    judgements = pd.cut(log['score'].values, [log['score'].min(), k, log['score'].max()+1], right=False, labels=['N', 'A'])
-    log['judge'] = judgements
+    log.to_cvs(args.output)
 
     print('AUC: {}'.format(metrics.auc(fp.values, recall.values)))
-    log.to_excel(args.output)
