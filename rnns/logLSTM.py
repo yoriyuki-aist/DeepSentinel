@@ -92,7 +92,7 @@ class LogLSTM(chainer.Chain):
         loss = 0.0
         diag = np.diag(f_nt[0])
         has_val_mat = Variable(xp.array(diag, dtype=xp.float32), volatile=volatile)
-        has_val_bool = Variable(xp.array(np.greater(f_nt, 0).T, dtype=xp.bool), volatile=volatile)
+        has_val_bool = Variable(xp.array(np.greater(f_nt, 0).T, dtype=bool), volatile=volatile)
         ps_true = F.split_axis(ps_true, self.position_units, 1)
         for i in range(self.position_units):
             zero = Variable(xp.zeros(ps_true[i].shape, dtype=xp.int32), volatile=volatile)
