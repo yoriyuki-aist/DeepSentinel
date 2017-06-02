@@ -75,9 +75,9 @@ class LogStore:
         new_index = pd.date_range(start=self.log.index[0], end=self.log.index[-1], freq='S', normalize=True)
         self.log = self.log.reindex(new_index)
         positions = self.log[discrete_labels]
-        filled = self.log['F']
-        positions.fillna(0)
-        filled.fillna(0)
+        filled = self.log[['F']]
+        positions = positions.fillna(0)
+        filled = filled.fillna(0)
 
         if normal is None:
             zscore = lambda x: (x - x.mean()) / x.std()
@@ -85,7 +85,7 @@ class LogStore:
         else:
             zscore = lambda x: (x - normal.log[x.name].mean()) / normal.log[x.name].std()
             values = self.log[value_labels].apply(zscore)
-        values.fillna(0)
+        values = values.fillna(0)
 
 
         if normal is None:
