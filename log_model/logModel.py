@@ -1,6 +1,6 @@
 import pickle
-import itertools
 import functools
+import itertools
 import chainer
 import math
 import numpy as np
@@ -71,15 +71,19 @@ class LogModel:
                     print(j, ',',  loss_sum, file=statfile)
                 self.current_epoch = j
                 self.save()
-
-                loss_sum = sum(self.eval(self.log_store))
-                with open(self.dir+"{}-test-stat-{}-{}-dropout-{}.csv".format(self.log_store.filename, self.lstm_num, self.n_units, self.dropout),'a') as statfile:
-                    print(j, ',',  loss_sum, file=statfile)
+                self.test()
 
     def _eval(self, seq):
         sys.exit('logModel._eval is no longer implemented.')
 
+    def test(self):
+        loss_sum = sum(self.eval(self.log_store))
+        with open(self.dir+"{}-test-stat-{}-{}-dropout-{}.csv".format(self.log_store.filename, self.lstm_num, self.n_units, self.dropout),'a') as statfile:
+            print(self.current_epoch, ',',  loss_sum, file=statfile)
+
     def eval(self, log_store):
+        print(len(log_store.test_p_seq))
+        print(len(log_store.train_p_seq))
         f_seq = log_store.test_f_seq
         ps_seq = log_store.test_p_seq
         vs_seq = log_store.test_v_seq

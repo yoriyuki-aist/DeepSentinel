@@ -27,6 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--cont', '-c', default=False,
                 help='Continue to learn')
     parser.add_argument('--dropout', '-d', type=bool, default=True,     help='Dropout')
+    parser.add_argument('--testonly', '-t', type=bool, default=False, help='Eval only')
     parser.add_argument('logfile', metavar='F', help='Normal log file')
 
     args = parser.parse_args()
@@ -65,7 +66,9 @@ if __name__ == '__main__':
                 break
     log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=logLSTM_file, optimizer_file=optimizer_file, current_epoch=epoch, dropout=args.dropout)
 
-    if log_model.current_epoch == args.iter:
+    if args.testonly:
+        log_model.test()
+    elif log_model.current_epoch == args.iter:
         pass
     else:
         log_model.train(args.iter)
