@@ -46,15 +46,12 @@ class LogModel:
 
                 ps_seq = self.log_store.train_p_seq
                 vs_seq = self.log_store.train_v_seq
-                f_seq = self.log_store.train_f_seq
-                f_cur = f_seq[:-1]
                 ps_cur = ps_seq[:-1]
                 vs_cur = vs_seq[:-1]
                 cur = zip(f_cur, ps_cur, vs_cur)
-                f_nt = f_seq[1:]
                 ps_nt = ps_seq[1:]
                 vs_nt = vs_seq[1:]
-                nt = zip(f_nt, ps_nt, vs_nt)
+                nt = zip(ps_nt, vs_nt)
                 data = zip(cur, nt)
 
                 loss_sum = 0
@@ -80,17 +77,14 @@ class LogModel:
         sys.exit('logModel._eval is no longer implemented.')
 
     def eval(self, log_store):
-        f_seq = log_store.test_f_seq
         ps_seq = log_store.test_p_seq
         vs_seq = log_store.test_v_seq
         ps_cur = tqdm(ps_seq[:-1])
-        f_cur = f_seq[:-1]
         vs_cur = vs_seq[:-1]
         cur = zip(f_cur, ps_cur, vs_cur)
-        f_nt = f_seq[1:]
         ps_nt = ps_seq[1:]
         vs_nt = vs_seq[1:]
-        nt = zip(f_nt, ps_nt, vs_nt)
+        nt = zip(ps_nt, vs_nt)
         data = zip(cur, nt)
 
         self.model.reset_state()
