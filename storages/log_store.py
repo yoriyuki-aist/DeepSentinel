@@ -73,6 +73,7 @@ class LogStore:
         self.log.index = pd.to_datetime(self.log.index)
         #Remove the last day, which has only one entry
         self.log = self.log.iloc[:-1]
+        print(self.log)
         positions = self.log[discrete_labels]
 
         if normal is None:
@@ -85,16 +86,18 @@ class LogStore:
 
         if normal is None:
             grouped = values.groupby(values.index.map(lambda x: x.date()))
-            values_seqs = grouped.apply(lambda x: x.values)
-            rest = list(values_seqs.iloc[1:])
+            values_seqs =list(grouped.apply(lambda x: x.values))
+            values_seqs = sorted(values_seqs, key=lambda x: len(x))
+            rest = values_seqs[1:]
             #Use the first day for teset
-            firstday = values_seqs.iloc[0]
+            firstday = values_seqs[0]
             self.train_v_seq = np.stack(rest, axis=-1)
             self.test_v_seq = np.stack([firstday], axis=-1)
 
             grouped = positions.groupby(positions.index.map(lambda x: x.date()))
-            positions_seqs = grouped.apply(lambda x: x.values)
-            rest = list(positions_seqs.iloc[1:])
+            positions_seqs = list(grouped.apply(lambda x: x.values))
+            positions_seqs = sorted(positions_seqs, key=lambda x: len(x))
+            rest = positions_seqs[1:]
             firstday = positions_seqs.iloc[0]
             self.train_p_seq = np.stack(rest, axis=-1)
             self.test_p_seq = np.stack([firstday], axis=-1)
