@@ -94,8 +94,8 @@ class LogStore:
 
             grouped = positions.groupby(positions.index.map(lambda x: x.date()))
             positions_seqs = grouped.apply(lambda x: x.values)
-            rest = list(positions_seqs.iloc[:-1])
-            firstday = positions_seqs.iloc[-1]
+            rest = list(positions_seqs.iloc[1:])
+            firstday = positions_seqs.iloc[0]
             self.train_p_seq = np.stack(rest, axis=-1)
             self.test_p_seq = np.stack([firstday], axis=-1)
         else:
