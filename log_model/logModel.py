@@ -11,7 +11,7 @@ from tqdm import tqdm
 import sys
 
 class LogModel:
-    def __init__(self, log_store, lstm_num = 1, n_units=1000, tr_sq_ln=100, gpu=-1, directory='', logLSTM_file=None, optimizer_file=None, current_epoch=0, dropout=None):
+    def __init__(self, log_store, lstm_num = 1, n_units=1000, tr_sq_ln=100, gpu=-1, directory='', logLSTM_file=None, optimizer_file=None, current_epoch=0, dropout=True):
         self.log_store = log_store
         self.n_units= n_units
         self.tr_sq_ln = tr_sq_ln
@@ -19,7 +19,7 @@ class LogModel:
         self.dir = directory
         self.current_epoch = current_epoch
         self.lstm_num = lstm_num
-        self.dropout=None
+        self.dropout=dropout
 
         self.model = LogLSTM(lstm_num, 3, log_store.position_units, log_store.value_units, self.n_units)
         if not logLSTM_file is None:
@@ -80,7 +80,7 @@ class LogModel:
         sys.exit('logModel._eval is no longer implemented.')
 
     def eval(self, log_store):
-        f_seq = log.store.test_f_seq
+        f_seq = log_store.test_f_seq
         ps_seq = log_store.test_p_seq
         vs_seq = log_store.test_v_seq
         ps_cur = tqdm(ps_seq[:-1])
@@ -99,5 +99,5 @@ class LogModel:
     def save(self):
         filename = self.dir+"{}-model-{}-{}-dropout-{}-{}-lstms.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.dropout, self.current_epoch)
         serializers.save_npz(filename, self.model)
-        filename = self.dir+"{}-model-{}-{}-dropout-{}-{}-optimizer.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.droupout, self.current_epoch)
+        filename = self.dir+"{}-model-{}-{}-dropout-{}-{}-optimizer.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.dropout, self.current_epoch)
         serializers.save_npz(filename, self.optimizer)
