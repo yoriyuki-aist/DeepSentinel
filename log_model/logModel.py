@@ -1,6 +1,6 @@
 import pickle
-import itertools
 import functools
+import itertools
 import chainer
 import math
 import numpy as np

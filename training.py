@@ -64,7 +64,9 @@ if __name__ == '__main__':
                 break
     log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=logLSTM_file, optimizer_file=optimizer_file, current_epoch=epoch)
 
-    if log_model.current_epoch == args.iter:
+    if args.testonly:
+        log_model.test()
+    elif log_model.current_epoch == args.iter:
         pass
     else:
         log_model.train(args.iter)
