@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import itertools
 import operator
+import pickle
 from pathlib import Path
 
 value_labels = [('P1', 'FIT101'),
@@ -58,11 +59,29 @@ discrete_labels = [
 ('P6', 'P602'),
 ('P6', 'P603'),]
 
+def chunked(seq, chunk_num):
+    seq = seq[0:len(seq) // chunk_num * chunk_num]
+    return np.split(seq, chunk_num)
+
 class LogStore:
-    def __init__(self, filename, normal=None):
+    def __init__(self, filename, normal_filename=None):
+        self.position_units = len(discrete_labels)
+        self.value_units = len(value_labels)
+
+
         self.log = pd.read_excel(filename, header=[0, 1])
-        self.log.index = self.log.index.to_datetime()
+        self.log.index = pd.to_datetime(self.log.index)
         self.filename = Path(filename).stem
+        #Assuming the log is continous
+
+        normal = None
+        if not normal_filename is None:
+            print("loading normal log file...")
+            normallogname = Path(normal_filename).stem
+            normallogstore = (Path('output') / normallogname).with_suffix('.pickle')
+            if normallogstore.exists():
+                with normallogstore.open(mode='rb') as normallogstorefile:
+                    normal = pickle.load(normallogstorefile)
 
         if normal is None:
             zscore = lambda x: (x - x.mean()) / x.std()
@@ -72,13 +91,16 @@ class LogStore:
             values = self.log[value_labels].apply(zscore)
         values.fillna(0)
 
-        grouped = list(values.groupby(values.index.map(lambda x: x.date())).groups.items())
-
-
-        self.values_seq = values.values
-
         positions = self.log[discrete_labels]
-        self.positions_seq = positions.values
 
-        self.position_units = len(discrete_labels)
-        self.value_units = len(value_labels)
+        if normal is None:
+            v_seqs = chunked(values.values, 10)
+            p_seqs = chunked(positions.values, 10)
+        else:
+            v_seqs = chunked(values.values, 1)
+            p_seqs = chunked(positions.values, 1)
+
+        self.train_v_seqs = v_seqs[:-1]
+        self.test_v_seq = v_seqs[-1]
+        self.train_p_seqs = p_seqs[:-1]
+        self.test_p_seq = p_seqs[-1]

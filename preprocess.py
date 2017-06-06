@@ -8,14 +8,13 @@ import os
 import sys
 from storages import log_store
 from storages.log_store import LogStore
-from log_model import logModel
-from log_model.logModel import LogModel
 
 if __name__ == '__main__':
 
     #コマンドライン引数
     parser = argparse.ArgumentParser(description='Preprocessing')
     parser.add_argument('logfile', metavar='F', help='log file')
+    parser.add_argument('--normal', '-N', help='normal log file', default=None)
 
     args = parser.parse_args()
 
@@ -31,7 +30,7 @@ if __name__ == '__main__':
     logstore = (Path('output') / logname).with_suffix('.pickle')
 
     print("loading log file...")
-    log_store = LogStore(args.logfile)
+    log_store = LogStore(args.logfile, args.normal)
 
     with logstore.open(mode='wb') as f:
         pickle.dump(log_store, f)

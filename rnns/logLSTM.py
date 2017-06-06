@@ -37,11 +37,11 @@ class LogLSTM(chainer.Chain):
         for i in range(self.lstm_num):
             self.lstms[i].reset_state()
 
-    def __call__(self, data):
+    def __call__(self, data, dropout=True):
         loss = 0.0
 
         for cur, nt in data:
-            loss += self.eval(cur, nt, volatile='off', train=True)
+            loss += self.eval(cur, nt, volatile='off', train=dropout)
 
         return loss
 
