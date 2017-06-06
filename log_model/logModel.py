@@ -10,16 +10,21 @@ from rnns.logLSTM import LogLSTM
 from tqdm import tqdm
 import sys
 
+def batch_seq(seq, chunk_num):
+    seq = seq[0:len(seq) // chunk_num * chunk_num]
+    chunked = np.split(seq, chunk_num)
+    return np.stack(chunked, axis=-1)
+
 class LogModel:
-    def __init__(self, log_store, lstm_num = 1, n_units=1000, tr_sq_ln=100, gpu=-1, directory='', logLSTM_file=None, optimizer_file=None, current_epoch=0, dropout=None):
+    def __init__(self, log_store, lstm_num = 1, n_units=1000, tr_sq_ln=100, gpu=-1, directory='', logLSTM_file=None, optimizer_file=None, current_epoch=0):
         self.log_store = log_store
         self.n_units= n_units
         self.tr_sq_ln = tr_sq_ln
         self.gpu = gpu
         self.dir = directory
         self.current_epoch = current_epoch
+        self.chunk_num = 10
         self.lstm_num = lstm_num
-        self.dropout=None
 
         self.model = LogLSTM(lstm_num, 3, log_store.position_units, log_store.value_units, self.n_units)
         if not logLSTM_file is None:
@@ -44,60 +49,50 @@ class LogModel:
             for j in tqdm(range(self.current_epoch+1, epoch+1)):
                 model.reset_state()
 
-                ps_seq = self.log_store.train_p_seq
-                vs_seq = self.log_store.train_v_seq
-                f_seq = self.log_store.train_f_seq
-                f_cur = f_seq[:-1]
+                ps_seq = batch_seq(self.log_store.positions_seq, self.chunk_num)
+                vs_seq = batch_seq(self.log_store.values_seq, self.chunk_num)
                 ps_cur = ps_seq[:-1]
                 vs_cur = vs_seq[:-1]
-                cur = zip(f_cur, ps_cur, vs_cur)
-                f_nt = f_seq[1:]
+                cur = zip(ps_cur, vs_cur)
                 ps_nt = ps_seq[1:]
                 vs_nt = vs_seq[1:]
-                nt = zip(f_nt, ps_nt, vs_nt)
+                nt = zip(ps_nt, vs_nt)
                 data = zip(cur, nt)
 
                 loss_sum = 0
                 for k in tqdm(range(0, len(ps_seq) - 1, self.tr_sq_ln)):
                     model.cleargrads()
                     data_seq = list(itertools.islice(data, self.tr_sq_ln))
-                    loss = model(data_seq, self.dropout)
+                    loss = model(data_seq)
                     loss.backward()
                     loss.unchain_backward()
                     optimizer.update()
                     loss_sum += loss.data
 
-                with open(self.dir+"{}-training-stat-{}-{}-dropout-{}.csv".format(self.log_store.filename, self.lstm_num, self.n_units, self.dropout),'a') as statfile:
+                with open(self.dir+"{}-stat-{}-{}.csv".format(self.log_store.filename, self.lstm_num, self.n_units),'a') as statfile:
                     print(j, ',',  loss_sum, file=statfile)
                 self.current_epoch = j
                 self.save()
 
-                loss_sum = sum(self.eval(self.log_store))
-                with open(self.dir+"{}-test-stat-{}-{}-dropout-{}.csv".format(self.log_store.filename, self.lstm_num, self.n_units, self.dropout),'a') as statfile:
-                    print(j, ',',  loss_sum, file=statfile)
-
     def _eval(self, seq):
         sys.exit('logModel._eval is no longer implemented.')
 
-    def eval(self, log_store):
-        f_seq = log.store.test_f_seq
-        ps_seq = log_store.test_p_seq
-        vs_seq = log_store.test_v_seq
+    def eval(self, ps_seq, vs_seq):
+        ps_seq = batch_seq(ps_seq, 1)
+        vs_seq = batch_seq(vs_seq, 1)
         ps_cur = tqdm(ps_seq[:-1])
-        f_cur = f_seq[:-1]
         vs_cur = vs_seq[:-1]
-        cur = zip(f_cur, ps_cur, vs_cur)
-        f_nt = f_seq[1:]
+        cur = zip(ps_cur, vs_cur)
         ps_nt = ps_seq[1:]
         vs_nt = vs_seq[1:]
-        nt = zip(f_nt, ps_nt, vs_nt)
+        nt = zip(ps_nt, vs_nt)
         data = zip(cur, nt)
 
         self.model.reset_state()
         return (self.model.eval(cur, nt).data for cur, nt in data)
 
     def save(self):
-        filename = self.dir+"{}-model-{}-{}-dropout-{}-{}-lstms.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.dropout, self.current_epoch)
+        filename = self.dir+"{}-model-{}-{}-{}-lstms.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.current_epoch)
         serializers.save_npz(filename, self.model)
-        filename = self.dir+"{}-model-{}-{}-dropout-{}-{}-optimizer.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.droupout, self.current_epoch)
+        filename = self.dir+"{}-model-{}-{}-{}-optimizer.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.current_epoch)
         serializers.save_npz(filename, self.optimizer)

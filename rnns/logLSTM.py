@@ -37,20 +37,18 @@ class LogLSTM(chainer.Chain):
         for i in range(self.lstm_num):
             self.lstms[i].reset_state()
 
-    def __call__(self, data, dropout=True):
+    def __call__(self, data):
         loss = 0.0
 
         for cur, nt in data:
-            loss += self.eval(cur, nt, volatile='off', train=dropout)
+            loss += self.eval(cur, nt, volatile='off', train=True)
 
         return loss
 
     def eval(self, cur, nt, volatile='on', train=False):
         xp = self.xp
-        f_cur, positions_cur, values_cur = cur
-        f_nt, positions_nt, values_nt = nt
-
-        f_in = Variable(xp.array(f_cur.T, dtype=xp.float32), volatile=volatile)
+        positions_cur, values_cur = cur
+        positions_nt, values_nt = nt
 
         ps_in = Variable(xp.array(positions_cur.T, dtype=xp.int32), volatile=volatile)
         identity_matrix = Variable(xp.identity(self.position_num, dtype=xp.float32), volatile=volatile)
@@ -58,13 +56,9 @@ class LogLSTM(chainer.Chain):
         ps_in_dm = F.reshape(ps_in_dm, (ps_in_dm.shape[0], self.position_num * self.position_units))
 
         vs_in = Variable(xp.array(values_cur.T, dtype=xp.float32), volatile=volatile)
-
-        h = F.dropout(self.input_layer(F.concat((f_in, ps_in_dm,vs_in))), train=train)
+        h = F.dropout(self.input_layer(F.concat((ps_in_dm,vs_in))), train=train)
         for i in range(self.lstm_num):
             h = F.dropout(self.lstms[i](h), train=train)
-
-        if f_nt == 0:
-            return 0.0
 
         y = h
         y_pos = []
