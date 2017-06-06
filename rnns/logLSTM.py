@@ -98,7 +98,7 @@ class LogLSTM(chainer.Chain):
             zero = Variable(xp.zeros(ps_true[i].shape, dtype=xp.int32), volatile=volatile)
             valid_y_pos = F.matmul(has_val_mat, y_pos[i])
             valid_ps_true = F.where(has_val_bool, ps_true[i], zero)
-            loss += F.softmax_cross_entropy(valid_y_pos, F.flatten(valid_ps_true))
+            loss += F.softmax_cross_entropy(valid_y_pos, F.flatten(valid_ps_true), use_cudnn=False)
 
         for i in range(self.value_units):
             val_out = F.split_axis(y_val[i], 1, 1)
