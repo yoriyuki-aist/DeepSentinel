@@ -47,8 +47,10 @@ class LogLSTM(chainer.Chain):
 
     def eval(self, cur, nt, volatile='on', train=False):
         xp = self.xp
-        positions_cur, values_cur = cur
-        positions_nt, values_nt = nt
+        f_cur, positions_cur, values_cur = cur
+        f_nt, positions_nt, values_nt = nt
+
+        f_in = Variable(xp.array(f_cur.T, dtype=xp.float32), volatile=volatile)
 
         ps_in = Variable(xp.array(positions_cur.T, dtype=xp.int32), volatile=volatile)
         identity_matrix = Variable(xp.identity(self.position_num, dtype=xp.float32), volatile=volatile)
@@ -57,7 +59,7 @@ class LogLSTM(chainer.Chain):
 
         vs_in = Variable(xp.array(values_cur.T, dtype=xp.float32), volatile=volatile)
 
-        h = F.dropout(self.input_layer(F.concat((ps_in_dm, vs_in))), train=train)
+        h = F.dropout(self.input_layer(F.concat((f_in, ps_in_dm, vs_in))), train=train)
         for i in range(self.lstm_num):
             h = F.dropout(self.lstms[i](h), train=train)
 
@@ -89,12 +91,17 @@ class LogLSTM(chainer.Chain):
 
         loss = 0.0
         diag = np.diag(f_nt[0])
+        has_val_mat = Variable(xp.array(diag, dtype=xp.float32), volatile=volatile)
+        has_val_bool = Variable(xp.array(np.greater(f_nt, 0).T, dtype=bool), volatile=volatile)
         ps_true = F.split_axis(ps_true, self.position_units, 1)
         for i in range(self.position_units):
-            loss += F.softmax_cross_entropy(y_pos[i], F.flatten(ps_true[i]))
+            zero = Variable(xp.zeros(ps_true[i].shape, dtype=xp.int32), volatile=volatile)
+            valid_y_pos = F.matmul(has_val_mat, y_pos[i])
+            valid_ps_true = F.where(has_val_bool, ps_true[i], zero)
+            loss += F.softmax_cross_entropy(valid_y_pos, F.flatten(valid_ps_true))
 
         for i in range(self.value_units):
             val_out = F.split_axis(y_val[i], 1, 1)
-            loss += F.gaussian_nll(vs_true[i], val_out[:,  0], val_out[:, 1])
+            loss += F.gaussian_nll(F.matmul(has_val_mat, vs_true[i]), F.matmul(has_val_mat, val_out[:,  0]), F.matmul(has_val_mat, val_out[:, 1]))
 
         return loss

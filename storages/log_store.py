@@ -71,9 +71,13 @@ class LogStore:
 
         self.log = pd.read_excel(filename, header=[0, 1])
         self.log.index = pd.to_datetime(self.log.index)
-        #Remove the last day, which has only one entry
-        self.log = self.log.iloc[:-1]
+        self.log['F'] = 1 #the row is filled
+        new_index = pd.date_range(start=self.log.index[0], end=self.log.index[-1], freq='S', normalize=True)
+        self.log = self.log.reindex(new_index)
         positions = self.log[discrete_labels]
+        filled = self.log[['F']]
+        positions = positions.fillna(0)
+        filled = filled.fillna(0)
 
         if normal is None:
             zscore = lambda x: (x - x.mean()) / x.std()
@@ -81,23 +85,31 @@ class LogStore:
         else:
             zscore = lambda x: (x - normal.log[x.name].mean()) / normal.log[x.name].std()
             values = self.log[value_labels].apply(zscore)
+        values = values.fillna(0)
 
 
         if normal is None:
             grouped = values.groupby(values.index.map(lambda x: x.date()))
             values_seqs = grouped.apply(lambda x: x.values)
-            rest = list(values_seqs.iloc[1:])
-            #Use the first day for teset
-            firstday = values_seqs.iloc[0]
+            rest = list(values_seqs.iloc[:-1])
+            lastday = values_seqs.iloc[-1]
             self.train_v_seq = np.stack(rest, axis=-1)
-            self.test_v_seq = np.stack([firstday], axis=-1)
+            self.test_v_seq = np.stack([lastday], axis=-1)
 
             grouped = positions.groupby(positions.index.map(lambda x: x.date()))
             positions_seqs = grouped.apply(lambda x: x.values)
             rest = list(positions_seqs.iloc[:-1])
-            firstday = positions_seqs.iloc[-1]
+            lastday = positions_seqs.iloc[-1]
             self.train_p_seq = np.stack(rest, axis=-1)
-            self.test_p_seq = np.stack([firstday], axis=-1)
+            self.test_p_seq = np.stack([lastday], axis=-1)
+
+            grouped = filled.groupby(filled.index.map(lambda x: x.date()))
+            f_seqs = grouped.apply(lambda x: x.values)
+            rest = list(f_seqs.iloc[:-1])
+            lastday = positions_seqs.iloc[-1]
+            self.train_f_seq = np.stack(rest, axis=-1)
+            self.test_f_seq = np.stack([lastday], axis=-1)
         else:
             self.test_v_seq = np.stack([values.values], axis=-1)
             self.test_p_seq = np.stack([positions.values], axis=-1)
+            self.test_f_seq = np.stack([filled.values], axis=-1)
