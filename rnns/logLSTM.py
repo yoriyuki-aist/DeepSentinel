@@ -19,7 +19,7 @@ class LogLSTM(chainer.Chain):
             output_val_layers.add_link(L.Bilinear(1, n_units, n_units + 2))
 
         super(LogLSTM, self).__init__(
-            input_layer = L.Linear(1 + position_num * position_units + value_units, n_units),
+            input_layer = L.Linear(position_num * position_units + value_units, n_units),
             lstms = lstm_stack,
             output_pos1 = L.Linear(n_units, position_num),
             output_pos_layers = output_pos_layers,
@@ -59,9 +59,12 @@ class LogLSTM(chainer.Chain):
 
         vs_in = Variable(xp.array(values_cur.T, dtype=xp.float32), volatile=volatile)
 
-        h = F.dropout(self.input_layer(F.concat((f_in, ps_in_dm, vs_in))), train=train)
+        h = F.dropout(self.input_layer(F.concat((f_in, ps_in_dm,vs_in))), train=train)
         for i in range(self.lstm_num):
             h = F.dropout(self.lstms[i](h), train=train)
+
+        if f_nt == 0:
+            return 0.0
 
         y = h
         y_pos = []
@@ -76,8 +79,9 @@ class LogLSTM(chainer.Chain):
             y = F.dropout(F.sigmoid(y), train=train)
             y_pos.append(p_out)
 
+        p_true_dm = ps_true_dm[-1]
         y_val = []
-        y = self.output_lastpos(ps_true_dm[-1], y)
+        y = self.output_lastpos(p_true_dm, y)
         vs_true = Variable(xp.array(values_nt.T, dtype=xp.float32), volatile=volatile)
         vs_true = F.split_axis(vs_true, self.value_units, 1)
         for i in range(self.value_units - 1):
@@ -90,18 +94,12 @@ class LogLSTM(chainer.Chain):
         y_val.append(self.output_last_value(F.dropout(F.sigmoid(y), train=train)))
 
         loss = 0.0
-        diag = np.diag(f_nt[0])
-        has_val_mat = Variable(xp.array(diag, dtype=xp.float32), volatile=volatile)
-        has_val_bool = Variable(xp.array(np.greater(f_nt, 0).T, dtype=xp.bool), volatile=volatile)
         ps_true = F.split_axis(ps_true, self.position_units, 1)
         for i in range(self.position_units):
-            zero = Variable(xp.zeros(ps_true[i].shape, dtype=xp.int32), volatile=volatile)
-            valid_y_pos = F.matmul(has_val_mat, y_pos[i])
-            valid_ps_true = F.where(has_val_bool, ps_true[i], zero)
-            loss += F.softmax_cross_entropy(valid_y_pos, F.flatten(valid_ps_true), use_cudnn=False)
+            loss += F.softmax_cross_entropy(y_pos[i], F.flatten(ps_true[i]), use_cudnn=False)
 
         for i in range(self.value_units):
             val_out = F.split_axis(y_val[i], 1, 1)
-            loss += F.gaussian_nll(F.matmul(has_val_mat, vs_true[i]), F.matmul(has_val_mat, val_out[:,  0]), F.matmul(has_val_mat, val_out[:, 1]))
+            loss += F.gaussian_nll(F.flatten(vs_true[i]), val_out[:,  0], val_out[:, 1])
 
         return loss
