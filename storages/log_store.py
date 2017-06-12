@@ -94,12 +94,16 @@ class LogStore:
         positions = self.log[discrete_labels]
 
         if normal is None:
+            i_seq = chunked(self.log.index.values, 10)
             v_seqs = chunked(values.values, 10)
             p_seqs = chunked(positions.values, 10)
         else:
+            i_seq = chunked(self.log.index.values, 1)
             v_seqs = chunked(values.values, 1)
             p_seqs = chunked(positions.values, 1)
 
+        self.train_i_seqs = i_seqs[:-1]
+        self.test_i_seqs = i_seqs[-1]
         self.train_v_seqs = v_seqs[:-1]
         self.test_v_seq = v_seqs[-1]
         self.train_p_seqs = p_seqs[:-1]
