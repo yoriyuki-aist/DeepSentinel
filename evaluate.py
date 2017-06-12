@@ -16,7 +16,6 @@ from sklearn import metrics
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Compute outlier factors and evaluate them')
-    parser.add_argument('normal', metavar='NormalLog', help='Normal log')
     parser.add_argument('model', metavar='Modelile', help='Model file')
     parser.add_argument('logfile', metavar='Target', help='Log to be analyzed')
     parser.add_argument('output', metavar='Output', help='Output')
@@ -35,18 +34,6 @@ if __name__ == '__main__':
         if not Path('output').is_dir():
             sys.exit('output is not a directory.')
 
-    normallogname = Path(args.normal).stem
-    normallogstore = (Path('output') / normallogname).with_suffix('.pickle')
-
-    print("loading normal log file...")
-    if normallogstore.exists():
-        with normallogstore.open(mode='rb') as normallogstorefile:
-            normal_log_store = pickle.load(normallogstorefile)
-    else:
-        normal_log_store = LogStore(args.normal)
-        with normallogstore.open(mode='wb') as f:
-            pickle.dump(normal_log_store, f)
-
     logname = Path(args.logfile).stem
     logstore = (Path('output') / logname).with_suffix('.pickle')
 
@@ -55,9 +42,7 @@ if __name__ == '__main__':
         with logstore.open(mode='rb') as logstorefile:
             log_store = pickle.load(logstorefile)
     else:
-        log_store = LogStore(args.logfile, normal_log_store)
-        with logstore.open(mode='wb') as f:
-            pickle.dump(log_store, f)
+        sys.exit('no logfile')
 
     print('loading model file...')
     if not Path(args.model).exists():
@@ -68,7 +53,6 @@ if __name__ == '__main__':
     print("start evaluating...")
     scores = list(log_model.eval(log_store))
     scores = np.array(scores, np.float32)
-    log = log_store.log
-    log['score'] = pd.Series(scores, log.index[:-1]).shift(1)
+    scores = pd.Series(scores, log_store.test_i_seq[1:])
 
-    log['score'].to_csv(args.output)
+    scores.to_csv(args.output)
