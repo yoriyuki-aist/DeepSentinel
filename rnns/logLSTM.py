@@ -54,9 +54,17 @@ class LogLSTM(chainer.Chain):
     def eval(self, cur, nt, volatile='on', train=False):
         if volatile == 'on':
             with chainer.no_backdrop_mode():
-                loss = self._eval(cur, nt, train)
+                if train == False:
+                    with chainer.using_config('train', False):
+                        loss = self._eval(cur, nt, train)
+                else:
+                    loss = self._eval(cur, nt, train)
         else:
-            loss = self._eval(cur, nt, train)
+            if train == False:
+                with chainer.using_config('train', False):
+                    loss = self._eval(cur, nt, train)
+            else:
+                loss = self._eval(cur, nt, train)
 
         return loss
 
