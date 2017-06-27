@@ -113,7 +113,7 @@ class LogLSTM(chainer.Chain):
         loss = 0.0
         ps_true = F.split_axis(ps_true, self.position_units, 1)
         for i in range(self.position_units):
-            with chainer.using_config('use_cudnn', use_cudnn):
+            with chainer.using_config('use_cudnn', False):
                 loss += F.softmax_cross_entropy(y_pos[i], F.flatten(ps_true[i]))
 
         for i in range(self.value_units):
