@@ -28,7 +28,7 @@ if __name__ == '__main__':
                 help='Continue to learn')
     parser.add_argument('logfile', metavar='F', help='Normal log file')
     parser.add_argument('--dropout', '-d', type=bool, default=True,     help='Dropout')
-    parser.add_argument('--activation', '-a', default='sigmoid', help='activation function')
+    parser.add_argument('--activation', '-a', help='activation function')
     parser.add_argument('--testonly', '-t', type=bool, default=False, help='Eval only')
     args = parser.parse_args()
 

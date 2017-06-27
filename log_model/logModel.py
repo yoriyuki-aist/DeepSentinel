@@ -14,7 +14,7 @@ def batch_seq(seqs):
     return np.stack(seqs, axis=-1)
 
 class LogModel:
-    def __init__(self, log_store, lstm_num = 1, n_units=1000, tr_sq_ln=100, gpu=-1, directory='', logLSTM_file=None, optimizer_file=None, current_epoch=0, dropout=True, activation='sigmoid'):
+    def __init__(self, log_store, lstm_num = 1, n_units=1000, tr_sq_ln=100, gpu=-1, directory='', logLSTM_file=None, optimizer_file=None, current_epoch=0, dropout=True, activation=''):
         self.log_store = log_store
         self.n_units= n_units
         self.tr_sq_ln = tr_sq_ln
