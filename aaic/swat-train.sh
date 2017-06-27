@@ -9,7 +9,7 @@
 #PBS -M yoriyuki.yamagata@aist.go.jp
 #PBS -m b,e
 
-arrGPU=(${CUDA_VISIBLE_DEVICE//,/ })
+arrGPU=(${CUDA_VISIBLE_DEVICES//,/ })
 GPU=${arrGPU[0]}
 
 python training.py -n 100 -i 100 -s 1 -c true -d true -a sigmoid -g $GPU SWaT_Dataset_Normal_v0 &
