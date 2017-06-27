@@ -14,7 +14,7 @@ def batch_seq(seqs):
     return np.stack(seqs, axis=-1)
 
 class LogModel:
-    def __init__(self, log_store, lstm_num = 1, n_units=1000, tr_sq_ln=100, gpu=-1, directory='', logLSTM_file=None, optimizer_file=None, current_epoch=0, dropout=True):
+    def __init__(self, log_store, lstm_num = 1, n_units=1000, tr_sq_ln=100, gpu=-1, directory='', logLSTM_file=None, optimizer_file=None, current_epoch=0, dropout=True, activation='sigmoid'):
         self.log_store = log_store
         self.n_units= n_units
         self.tr_sq_ln = tr_sq_ln
@@ -24,7 +24,7 @@ class LogModel:
         self.lstm_num = lstm_num
         self.dropout=dropout
 
-        self.model = LogLSTM(lstm_num, 3, log_store.position_units, log_store.value_units, self.n_units)
+        self.model = LogLSTM(lstm_num, 3, log_store.position_units, log_store.value_units, self.n_units, activation=activation)
         if not logLSTM_file is None:
             serializers.load_npz(logLSTM_file, self.model)
         if self.gpu >= 0:
@@ -72,7 +72,7 @@ class LogModel:
                     print(j, ',',  loss_sum, file=statfile)
                 self.current_epoch = j
                 self.save()
-                self.test()
+                #self.test()
 
     def _eval(self, seq):
         sys.exit('logModel._eval is no longer implemented.')

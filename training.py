@@ -28,6 +28,7 @@ if __name__ == '__main__':
                 help='Continue to learn')
     parser.add_argument('logfile', metavar='F', help='Normal log file')
     parser.add_argument('--dropout', '-d', type=bool, default=True,     help='Dropout')
+    parser.add_argument('--activation', '-a', default='sigmoid', help='activation function')
     parser.add_argument('--testonly', '-t', type=bool, default=False, help='Eval only')
     args = parser.parse_args()
 
@@ -51,7 +52,7 @@ if __name__ == '__main__':
 
     logLSTM_file = None
     optimizer_file = None
-    if args.cont: 
+    if args.cont:
         for epoch in range(args.iter, -1, -1):
             log_model_name = logname + "-model-{}-{}-dropout-{}-{}-lstms".format(args.lstm, args.n_units, args.dropout, epoch)
             model_path = (Path('output') / log_model_name).with_suffix('.npz')
@@ -63,7 +64,7 @@ if __name__ == '__main__':
                 if optimizer_path.exists():
                     optimizer_file = optimizer_path.as_posix()
                 break
-    log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=logLSTM_file, optimizer_file=optimizer_file, current_epoch=epoch, dropout=args.dropout)
+    log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=logLSTM_file, optimizer_file=optimizer_file, current_epoch=epoch, dropout=args.dropout, activation=args.activation)
 
     if args.testonly:
         log_model.test()

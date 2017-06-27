@@ -102,9 +102,9 @@ class LogStore:
             v_seqs = chunked(values.values, 1)
             p_seqs = chunked(positions.values, 1)
 
-        self.train_i_seqs = i_seqs[:-1]
+        self.train_i_seqs = i_seqs
         self.test_i_seq = i_seqs[-1]
-        self.train_v_seqs = v_seqs[:-1]
+        self.train_v_seqs = v_seqs
         self.test_v_seq = v_seqs[-1]
-        self.train_p_seqs = p_seqs[:-1]
+        self.train_p_seqs = p_seqs
         self.test_p_seq = p_seqs[-1]
