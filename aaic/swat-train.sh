@@ -9,6 +9,8 @@
 #PBS -M yoriyuki.yamagata@aist.go.jp
 #PBS -m b,e
 
+source activate swat-analyzer
+
 arrGPU=(${CUDA_VISIBLE_DEVICES//,/ })
 GPU=${arrGPU[0]}
 
