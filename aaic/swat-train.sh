@@ -7,7 +7,8 @@
 #PBS -l elapstim_req=72:00:00
 #PBS -l memsz_job=30gb
 #PBS -M yoriyuki.yamagata@aist.go.jp
-#PBS -m b,e
+#PBS -m b
+#PBS -m e
 
 source activate swat-analyzer
 
