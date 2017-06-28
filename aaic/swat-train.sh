@@ -10,7 +10,7 @@
 #PBS -m e
 
 source activate swat-analyzer
-
+echo $CUDA_VISIBLE_DEVICES
 arrGPU=(${CUDA_VISIBLE_DEVICES//,/ })
 GPU=${arrGPU[0]}
 
