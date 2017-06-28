@@ -117,7 +117,7 @@ class LogLSTM(chainer.Chain):
                 loss += F.softmax_cross_entropy(y_pos[i], F.flatten(ps_true[i]))
 
         for i in range(self.value_units):
-            val_out = F.split_axis(y_val[i], 1, 1)
+            val_out, = F.split_axis(y_val[i], 1, 1)
             loss += F.gaussian_nll(F.flatten(vs_true[i]), val_out[:,  0], val_out[:, 1])
 
         return loss
