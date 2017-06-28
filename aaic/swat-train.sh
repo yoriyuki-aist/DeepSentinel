@@ -14,6 +14,7 @@ source activate swat-analyzer
 arrGPU=(${CUDA_VISIBLE_DEVICES//,/ })
 GPU=${arrGPU[0]}
 
+cd /home/yoriyuki/Factory/swat-analyzer
 python training.py -n 100 -i 100 -s 1 -c true -d true -a sigmoid -g $GPU SWaT_Dataset_Normal_v0 &
 python training.py -n 200 -i 100 -s 1 -c true -d true -a sigmoid -g $GPU SWaT_Dataset_Normal_v0 &
 python training.py -n 300 -i 100 -s 1 -c true -d true -a sigmoid -g $GPU SWaT_Dataset_Normal_v0 &
