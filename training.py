@@ -54,12 +54,12 @@ if __name__ == '__main__':
     optimizer_file = None
     if args.cont:
         for epoch in range(args.iter, -1, -1):
-            log_model_name = logname + "-model-{}-{}-dropout-{}-{}-lstms".format(args.lstm, args.n_units, args.dropout, epoch)
+            log_model_name = logname + "-model-{}-{}-dropout-{}-{}-{}-lstms".format(args.lstm, args.n_units, args.dropout, args.activation, epoch)
             model_path = (Path('output') / log_model_name).with_suffix('.npz')
             if model_path.exists():
                 logLSTM_file = model_path.as_posix()
 
-                optimizer_name = logname + "-model-{}-{}-dropout-{}-{}-optimizer".format(args.lstm, args.n_units, args.dropout, epoch)
+                optimizer_name = logname + "-model-{}-{}-dropout-{}-{}-{}-optimizer".format(args.lstm, args.n_units, args.dropout, args.activation, epoch)
                 optimizer_path = (Path('output') / optimizer_name).with_suffix('.npz')
                 if optimizer_path.exists():
                     optimizer_file = optimizer_path.as_posix()

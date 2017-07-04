@@ -23,6 +23,7 @@ class LogModel:
         self.current_epoch = current_epoch
         self.lstm_num = lstm_num
         self.dropout=dropout
+        self.activation = activation
 
         self.model = LogLSTM(lstm_num, 3, log_store.position_units, log_store.value_units, self.n_units, activation=activation)
         if not logLSTM_file is None:
@@ -68,7 +69,7 @@ class LogModel:
                     loss_sum += loss.data
 
 
-                with open(self.dir+"{}-training-stat-{}-{}-dropout-{}.csv".format(self.log_store.filename, self.lstm_num, self.n_units, self.dropout),'a') as statfile:
+                with open(self.dir+"{}-training-stat-{}-{}-dropout-{}-{}.csv".format(self.log_store.filename, self.lstm_num, self.n_units, self.dropout, self.activation),'a') as statfile:
                     print(j, ',',  loss_sum, file=statfile)
                 self.current_epoch = j
                 self.save()
@@ -97,7 +98,7 @@ class LogModel:
         return (self.model.eval(cur, nt).data for cur, nt in data)
 
     def save(self):
-        filename = self.dir+"{}-model-{}-{}-dropout-{}-{}-lstms.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.dropout, self.current_epoch)
+        filename = self.dir+"{}-model-{}-{}-dropout-{}-{}-{}-lstms.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.dropout, self.activation, self.current_epoch)
         serializers.save_npz(filename, self.model)
-        filename = self.dir+"{}-model-{}-{}-dropout-{}-{}-optimizer.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.dropout, self.current_epoch)
+        filename = self.dir+"{}-model-{}-{}-dropout-{}-{}-{}-optimizer.npz".format(self.log_store.filename, self.lstm_num, self.n_units, self.dropout, self.activation, self.current_epoch)
         serializers.save_npz(filename, self.optimizer)
