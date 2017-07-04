@@ -14,6 +14,10 @@ class LogLSTM(chainer.Chain):
         for i in range(position_units - 1):
             output_pos_layers.add_link(L.Bilinear(position_num, n_units, n_units + position_num))
 
+        output_pos_mid_layers = chainer.ChainList()
+        for i in range(position_units - 1):
+            output_pos_mid_layers
+
         output_val_layers = chainer.ChainList()
         for i in range(value_units - 1):
             output_val_layers.add_link(L.Bilinear(1, n_units, n_units + 2))
@@ -113,11 +117,10 @@ class LogLSTM(chainer.Chain):
         loss = 0.0
         ps_true = F.split_axis(ps_true, self.position_units, 1)
         for i in range(self.position_units):
-            with chainer.using_config('use_cudnn', 'never'):
-                loss += F.softmax_cross_entropy(y_pos[i], F.flatten(ps_true[i]))
+            loss += F.softmax_cross_entropy(y_pos[i], F.flatten(ps_true[i]), use_cudnn=False)
 
         for i in range(self.value_units):
-            val_out, = F.split_axis(y_val[i], 1, 1)
+            val_out = F.split_axis(y_val[i], 1, 1)
             loss += F.gaussian_nll(F.flatten(vs_true[i]), val_out[:,  0], val_out[:, 1])
 
         return loss
