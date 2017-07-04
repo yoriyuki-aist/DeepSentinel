@@ -7,7 +7,6 @@ import numpy as np
 from chainer import cuda, optimizers, serializers
 from rnns import logLSTM
 from rnns.logLSTM import LogLSTM
-from tqdm import tqdm
 import sys
 
 def batch_seq(seqs):
@@ -45,7 +44,7 @@ class LogModel:
             model = self.model
             optimizer = self.optimizer
 
-            for j in tqdm(range(self.current_epoch+1, epoch+1)):
+            for j in range(self.current_epoch+1, epoch+1):
                 model.reset_state()
 
                 ps_seq = batch_seq(self.log_store.train_p_seqs)
@@ -59,7 +58,7 @@ class LogModel:
                 data = zip(cur, nt)
 
                 loss_sum = 0
-                for k in tqdm(range(0, len(ps_seq) - 1, self.tr_sq_ln)):
+                for k in range(0, len(ps_seq) - 1, self.tr_sq_ln):
                     model.cleargrads()
                     data_seq = list(itertools.islice(data, self.tr_sq_ln))
                     loss = model(data_seq, dropout=self.dropout)

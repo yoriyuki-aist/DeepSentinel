@@ -6,8 +6,6 @@ from pathlib import Path
 import glob
 import os
 import sys
-from storages import log_store
-from storages.log_store import LogStore
 import log_model
 from log_model import logModel
 from log_model.logModel import LogModel
