@@ -8,6 +8,7 @@
 #PBS -M yoriyuki.yamagata@aist.go.jp
 #PBS -m e
 
+module purge
 source activate swat-analyzer
 # echo $CUDA_VISIBLE_DEVICES
 # arrGPU=(${CUDA_VISIBLE_DEVICES//,/ })
