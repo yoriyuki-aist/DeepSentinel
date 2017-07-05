@@ -12,19 +12,29 @@ class LogLSTM(chainer.Chain):
 
         output_pos_layers = chainer.ChainList()
         for i in range(position_units - 1):
-            output_pos_layers.add_link(L.Bilinear(position_num, n_units, n_units + position_num))
+            output_pos_layers.add_link(L.Bilinear(position_num, n_units, n_units))
+
+        output_pos_mid_layers = chainer.ChainList()
+        for i in range(position_units - 1):
+            output_pos_mid_layers.add_link(L.Linear(n_units, n_units + position_num))
 
         output_val_layers = chainer.ChainList()
         for i in range(value_units - 1):
-            output_val_layers.add_link(L.Bilinear(1, n_units, n_units + 2))
+            output_val_layers.add_link(L.Bilinear(1, n_units, n_units))
+
+        output_val_mid_layers = chainer.ChainList()
+        for i in range(position_units - 1):
+            output_val_mid_layers.add_link(L.Linear(n_units, n_units + 2))
 
         super(LogLSTM, self).__init__(
             input_layer = L.Linear(position_num * position_units + value_units, n_units),
             lstms = lstm_stack,
             output_pos1 = L.Linear(n_units, position_num),
             output_pos_layers = output_pos_layers,
-            output_lastpos = L.Bilinear(position_num, n_units, n_units + 2),
+            output_pos_mid_layers = output_pos_mid_layers,
+            output_lastpos = L.Bilinear(position_num, n_units, n_units),
             output_val_layers = output_val_layers,
+            output_val_mid_layers = output_val_mid_layers,
             output_last_value = L.Linear(n_units, 2)
         )
         self.position_num = position_num
@@ -91,24 +101,24 @@ class LogLSTM(chainer.Chain):
         ps_true_dm = F.reshape(ps_true_dm, (ps_true_dm.shape[0], self.position_num * self.position_units))
         ps_true_dm = F.split_axis(ps_true_dm, self.position_units, 1)
         for i in range(self.position_units - 1):
-            z = self.output_pos_layers[i](ps_true_dm[i], y)
+            z = F.dropout(self.activate(self.output_pos_layers[i](ps_true_dm[i], y)))
+            z = self.output_pos_mid_layers[i](z)
             y, p_out = F.split_axis(z, [self.n_units], 1)
             y = F.dropout(self.activate(y))
             y_pos.append(p_out)
 
         p_true_dm = ps_true_dm[-1]
         y_val = []
-        y = self.output_lastpos(p_true_dm, y)
+        y = F.dropout(self.activate(self.output_lastpos(p_true_dm, y)))
         vs_true = Variable(xp.array(values_nt.T, dtype=xp.float32))
         vs_true = F.split_axis(vs_true, self.value_units, 1)
         for i in range(self.value_units - 1):
+            y = self.output_val_mid_layers[i](y)
             y, val_out = F.split_axis(y, [self.n_units], 1)
             y_val.append(val_out)
-            y = F.dropout(self.activate(y))
-            y = self.output_val_layers[i](vs_true[i], y)
-        y, val_out = F.split_axis(y, [self.n_units], 1)
+            y = F.dropout(self.activate(self.output_val_layers[i](vs_true[i], y)))
+        val_out = self.output_last_value(y)
         y_val.append(val_out)
-        y_val.append(self.output_last_value(F.dropout(self.activate(y))))
 
         loss = 0.0
         ps_true = F.split_axis(ps_true, self.position_units, 1)
