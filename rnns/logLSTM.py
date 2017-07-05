@@ -1,6 +1,7 @@
 import numpy as np
 import chainer
 from chainer import Variable, functions as F, links as L
+from storages import log_store
 
 class LogLSTM(chainer.Chain):
     def __init__(self, lstm_num, position_num, position_units, value_units, n_units, activation):
