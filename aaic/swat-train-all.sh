@@ -8,7 +8,7 @@
 #PBS -M yoriyuki.yamagata@aist.go.jp
 #PBS -m e
 
-module purge
+module unload tensorflow/0.12/cpu_python2.7
 source activate swat-analyzer
 # echo $CUDA_VISIBLE_DEVICES
 # arrGPU=(${CUDA_VISIBLE_DEVICES//,/ })
