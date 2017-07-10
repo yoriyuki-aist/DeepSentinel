@@ -8,13 +8,9 @@
 #PBS -M yoriyuki.yamagata@aist.go.jp
 #PBS -m e
 
+module switch cuda/8.0 cuda/8.0.61+cudnn-6.0.21+nccl-1.3.4-1
+module purge
 source activate swat-analyzer
-echo $CUDA_VISIBLE_DEVICES
-arrGPU=(${CUDA_VISIBLE_DEVICES//,/ })
-GPU=${arrGPU[0]}
-echo $GPU
 
-cd /home/yoriyuki/Factory/swat-analyzer
-python training.py -n ${N_UNITS} -i ${ITER} -s 1 -c true -d true -a ${ACTIVATION} -g $GPU SWaT_Dataset_Normal_v0 &
-
-wait
+cd ${WD}
+python training.py -n ${N_UNITS} -i ${ITER} -s 1 -c true -d true -a ${ACTIVATION} -g 0 SWaT_Dataset_Normal_v0
