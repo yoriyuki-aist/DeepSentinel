@@ -9,7 +9,6 @@
 #PBS -m e
 
 module switch cuda/8.0 cuda/8.0.61+cudnn-6.0.21+nccl-1.3.4-1
-module purge
 source activate swat-analyzer
 
 cd ${WD}
