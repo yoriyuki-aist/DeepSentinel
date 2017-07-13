@@ -25,6 +25,7 @@ if __name__ == '__main__':
                         help='Number of n_units')
     parser.add_argument('--lstm', '-s', type=int, default=0,
                     help='the height of stacked LSTMs')
+    parser.add_argument('--activation', '-a', default='sigmoid', help='activation function')
     args = parser.parse_args()
 
     print('Creating output directory...')
@@ -48,7 +49,7 @@ if __name__ == '__main__':
     if not Path(args.model).exists():
         sys.exit('model does not exists.')
     else:
-        log_model = LogModel(log_store, lstm_num=args.lstm, n_units=args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=args.model)
+        log_model = LogModel(log_store, lstm_num=args.lstm, n_units=args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=args.model, activation=args.activation)
 
     print("start evaluating...")
     scores = list(log_model.eval(log_store))
