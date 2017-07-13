@@ -89,7 +89,7 @@ class LogStore:
         else:
             zscore = lambda x: (x - normal.log[x.name].mean()) / normal.log[x.name].std()
             values = self.log[value_labels].apply(zscore)
-        values.fillna(0)
+        values.fillna(0, inplace=True)
 
         positions = self.log[discrete_labels]
 
