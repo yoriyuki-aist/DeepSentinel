@@ -13,5 +13,3 @@ source activate swat-analyzer
 
 cd ${WD}
 python training.py -n ${N_UNITS} -i ${ITER} -s 1 -c true -d true -a ${ACTIVATION} -g 0 SWaT_Dataset_Normal_v0
-
-wait
