@@ -10,4 +10,4 @@
 source activate swat-analyzer
 
 cd ${WD}
-python evaluate.py -n ${N_UNITS} -s 1 -a sigmoid -g -1 output/SWaT_Dataset_Normal_v0-model-1-${N_UNITS}-dropout-True-sigmoid-${ITER}-lstms.npzSWaT_Dataset_Normal_v0 SWaT_Dataset_Attack_v0 output/SWaT_Dataset_Attack_v0-scores-1-${N_UNITS}-dropout-True-sigmoid-${ITER}.csv
+python evaluate.py -n ${N_UNITS} -s 1 -a sigmoid -g -1 output/SWaT_Dataset_Normal_v0-model-1-${N_UNITS}-dropout-True-sigmoid-${ITER}-lstms.npz SWaT_Dataset_Attack_v0 output/SWaT_Dataset_Attack_v0-scores-1-${N_UNITS}-dropout-True-sigmoid-${ITER}.csv
