@@ -19,7 +19,7 @@ if __name__ == '__main__':
                         help='Pickled log file (without output/ or extension)')
     parser.add_argument('--nu', '-n', type=float, default=default_nu,
                         help='Upper bound on training error rate [default: {}]'.format (default_nu))
-    parser.add_argument('--gamma', '-g', type=int, default=default_gamma,
+    parser.add_argument('--gamma', '-g', type=float, default=default_gamma,
                         help='Kernel coefficient [default: {}]'.format (default_gamma))
     parser.add_argument('--kernel', '-k', type=str, default=default_kernel,
                         help='Kernel (rbf, poly, or sigmoid) [default: {}]'.format (default_kernel))
