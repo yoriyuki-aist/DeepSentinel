@@ -98,12 +98,8 @@ if __name__ == '__main__':
     print ('compiling results...')
 
     # Pad data and save
-    saved_len = log_store.log.shape[0]
-    pred_len = pred.shape[0]
-    padded = np.repeat ('', saved_len)
-    padded[1:pred_len+1] = pred
-    log_store.log['Prediction'] = padded
-    log_store.log.to_excel (args.savefile)
+    with open (args.savefile, 'wb') as f:
+        pickle.dump (pred, f)
 
     is_normal = (labels == 'Normal')
     # NB: positive = attack, negative = normal
