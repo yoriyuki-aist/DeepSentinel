@@ -62,6 +62,7 @@ if __name__ == '__main__':
 
     print("preprocessing...")
 
+    labels = np.concatenate (log_store.train_l_seqs)
     values = np.concatenate (log_store.train_v_seqs)
     positions = np.concatenate (log_store.train_p_seqs)
     data = np.concatenate ([values, positions], axis=1)
@@ -73,6 +74,7 @@ if __name__ == '__main__':
     cur = data[:-args.gap]
     nxt = data[args.gap:]
     data = np.concatenate ([cur, nxt], axis=1)
+    labels = labels[args.gap:]
 
     if args.debug >= 4:
         print ('cur\n', cur)
@@ -87,5 +89,11 @@ if __name__ == '__main__':
         print ('data\n', data)
 
     pred_eval = model.predict (data)
-    n_error_eval = pred_eval[pred_eval == -1].size
-    print ('{}:\t{}/{} = {}'.format (args.target, n_error_eval, pred_eval.size, n_error_eval / pred_eval.size))
+    normals = (labels == 'Normal')
+    # NB: positive = novel
+    n_error_eval = np.sum ((pred_eval == 1) == normals)
+    print ('[{}]'.format (args.target))
+    print ('normal entries:\t\t{}/{}'.format (np.sum (normals), normals.size))
+    print ('incorrect predictions:\t{}/{} = {}'.format (
+        n_error_eval, pred_eval.size,
+        n_error_eval / pred_eval.size))
