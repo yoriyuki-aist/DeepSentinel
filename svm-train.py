@@ -77,7 +77,7 @@ if __name__ == '__main__':
     model = svm.OneClassSVM (nu=args.nu, kernel=args.kernel, gamma=args.gamma)
     model.fit (data)
 
-    savefilename = '{}-svm-n{}-g{}-{}.pickle'.format (logname, args.nu, args.kernel, args.gamma)
+    savefilename = '{}-svm-G{}-n{}-g{}-{}.pickle'.format (logname, args.gap, args.nu, args.gamma, args.kernel)
     savefile = (Path ('output') / savefilename)
     with savefile.open ('wb') as f:
         pickle.dump (model, f)
