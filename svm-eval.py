@@ -19,8 +19,6 @@ if __name__ == '__main__':
                         help='Data set used for training (needed for normalization)')
     parser.add_argument('target',
                         help='Target log file')
-    parser.add_argument('savefile',
-                        help='Excel file in which to save resulting data')
     parser.add_argument('--log', '-l', default=sys.stdout,
                         help='Log file (for stats like F-score)')
     parser.add_argument('--gap', '-G', type=int, default=default_gap,
@@ -97,8 +95,8 @@ if __name__ == '__main__':
 
     print ('compiling results...')
 
-    # Pad data and save
-    with open (args.savefile, 'wb') as f:
+    savefile = (modelfile.parent / (modelfile.stem + '-results.pickle'))
+    with savefile.open ('wb') as f:
         pickle.dump (pred, f)
 
     is_normal = (labels == 'Normal')
@@ -134,6 +132,7 @@ if __name__ == '__main__':
     output ('model:    {}'.format (modelfile))
     output ('training: {}'.format (normallogstore))
     output ('target:   {}'.format (args.target))
+    output ('results saved in: {}'.format (savefile))
     output ('')
     output ('normal entries:      {} / {} = {}'.format (
         n_normal, n_total, n_normal / n_total))
