@@ -9,10 +9,10 @@ import sys
 # from log_store import LogStore
 
 if __name__ == '__main__':
-    default_gap=1
     default_kernel='rbf'
     default_nu=0.1
     default_gamma=0.1
+    default_window=1
 
     parser = argparse.ArgumentParser(description='Train a model')
     parser.add_argument('logfile', metavar='F',
@@ -23,8 +23,8 @@ if __name__ == '__main__':
                         help='Kernel coefficient [default: {}]'.format (default_gamma))
     parser.add_argument('--kernel', '-k', type=str, default=default_kernel,
                         help='Kernel (rbf, poly, or sigmoid) [default: {}]'.format (default_kernel))
-    parser.add_argument('--gap', '-G', type=int, default=default_gap,
-                        help='How many entries forward to predict [default: {}]'.format (default_gap))
+    parser.add_argument('--window', '-w', type=int, default=default_window,
+                        help='How many entries to mash into one sample [default: {}]'.format (default_window))
     parser.add_argument('--debug', metavar='N', type=int, default=0,
                         help='Level of debugging output')
 
@@ -57,13 +57,11 @@ if __name__ == '__main__':
     print ('data size :', data.shape)
     if args.debug >= 2:
         print (data)
-    cur = data[:-args.gap]
-    nxt = data[args.gap:]
-    data = np.concatenate ([cur, nxt], axis=1)
+    window = [data[i:-(args.window-i)] for i in range (args.window)]
+    data = np.concatenate (window, axis=1)
 
     if args.debug >= 4:
-        print ('cur\n', cur)
-        print ('nxt\n', nxt)
+        print ('window\n', window)
         print ('data\n', data)
 
     print("start learning...")
@@ -77,7 +75,7 @@ if __name__ == '__main__':
     model = svm.OneClassSVM (nu=args.nu, kernel=args.kernel, gamma=args.gamma)
     model.fit (data)
 
-    savefilename = '{}-svm-G{}-n{}-g{}-{}.pickle'.format (logname, args.gap, args.nu, args.gamma, args.kernel)
+    savefilename = '{}-svm-w{}-n{}-g{}-{}.pickle'.format (logname, args.window, args.nu, args.gamma, args.kernel)
     savefile = (Path ('output') / savefilename)
     with savefile.open ('wb') as f:
         pickle.dump (model, f)

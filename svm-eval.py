@@ -8,10 +8,11 @@ from sklearn import svm
 from pathlib import Path
 from storages.log_store import LogStore
 from tqdm import tqdm
+from functools import reduce
 # from log_store import LogStore
 
 if __name__ == '__main__':
-    default_gap = 1
+    default_window = 1
     parser = argparse.ArgumentParser(description='Train a model')
     parser.add_argument('model', metavar='model',
                         help='Pickled model file (without output/ or extension)')
@@ -21,8 +22,8 @@ if __name__ == '__main__':
                         help='Target log file')
     parser.add_argument('--log', '-l', default=sys.stdout,
                         help='Log file (for stats like F-score)')
-    parser.add_argument('--gap', '-G', type=int, default=default_gap,
-                        help='How many entries forward to predict [default: {}]'.format (default_gap))
+    parser.add_argument('--window', '-w', type=int, default=default_window,
+                        help='How many entries to mash into one sample [default: {}]'.format (default_window))
     parser.add_argument('--debug', metavar='N', type=int, default=0,
                         help='Level of debugging output')
 
@@ -57,6 +58,7 @@ if __name__ == '__main__':
 
     targetlogname = Path (args.target).stem
     targetlogstore = (Path ('output') / targetlogname).with_suffix ('.pickle')
+    print ('target =', targetlogstore)
     if targetlogstore.exists():
         with targetlogstore.open(mode='rb') as logstorefile:
             log_store = pickle.load(logstorefile)
@@ -70,19 +72,22 @@ if __name__ == '__main__':
     positions = np.concatenate (log_store.train_p_seqs)
     data = np.concatenate ([values, positions], axis=1)
 
+    is_normal = (labels == 'Normal')
+
     if args.debug >= 1:
         print ('data :', data.shape)
     if args.debug >= 2:
         print (data)
-    cur = data[:-args.gap]
-    nxt = data[args.gap:]
-    data = np.concatenate ([cur, nxt], axis=1)
-    labels = labels[args.gap:]
+    window = [data[i:-(args.window-i)] for i in range (args.window)]
+    is_normal_window = [is_normal[i:-(args.window-i)] for i in range (args.window)]
+    data = np.concatenate (window, axis=1)
+    is_normal = reduce (np.logical_and, is_normal_window)
 
     if args.debug >= 4:
-        print ('cur\n', cur)
-        print ('nxt\n', nxt)
+        print ('window\n', window)
+        print ('is_normal_window\n', is_normal_window)
         print ('data\n', data)
+        print ('is_normal\n', is_normal)
 
     print("start evaluating...")
 
@@ -97,9 +102,8 @@ if __name__ == '__main__':
 
     savefile = (modelfile.parent / (modelfile.stem + '-results.pickle'))
     with savefile.open ('wb') as f:
-        pickle.dump (pred, f)
+        pickle.dump ((is_normal, pred), f)
 
-    is_normal = (labels == 'Normal')
     # NB: positive = attack, negative = normal
     pred_normal = (pred == -1)
     n_false_pos = np.count_nonzero ((1 - pred_normal) * is_normal)
