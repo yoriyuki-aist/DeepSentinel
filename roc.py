@@ -15,10 +15,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ROC')
     parser.add_argument('logfile', metavar='Target', help='Log to be analyzed')
     parser.add_argument('scorefile', metavar='Scores', help='Scores')
-    parser.add_argument('output', metavar='Output', help='Output')
     args = parser.parse_args()
 
-    print("loading log file...")
+    #print("loading log file...")
     logname = Path(args.logfile).stem
     logpath = (Path('output') / logname).with_suffix('.pickle')
 
@@ -28,7 +27,7 @@ if __name__ == '__main__':
     else:
         sys.exit('No log file.')
 
-    print("loading score file...")
+    #print("loading score file...")
     scores = pd.read_csv(args.scorefile, header=None, names=['score'])
 
     log = pd.concat([log_store.log, scores], axis=1, join='inner')
@@ -43,16 +42,9 @@ if __name__ == '__main__':
     correct_detection = log['Attack'].cumsum()
     false_detection = log['Normal'].cumsum()
 
-    precision = correct_detection / (correct_detection + false_detection)
     recall = correct_detection / (log['Attack'].sum())
     fp = false_detection / (log['Normal'].sum())
-
-    f_value = 2 * precision * recall / (precision + recall)
-
     log['false_positive'] = fp
-    log['precision'] = precision
     log['recall'] = recall
-    log['f_value'] = f_value
 
     print('AUC: {}'.format(metrics.auc(fp.values, recall.values)))
-    log.to_excel(args.output)

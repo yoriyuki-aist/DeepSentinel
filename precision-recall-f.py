@@ -55,9 +55,5 @@ if __name__ == '__main__':
 
     fp = log.apply(lambda x: normal_scores[normal_scores >= x['score']].count() / normal_scores.count(), axis=1)
 
-    log['false_positive'] = fp
-    log['precision'] = precision
-    log['recall'] = recall
-    log['f_value'] = f_value
-
-    log.to_excel(args.output)
+    fp_max = fp.idxmax()
+    print('{}, {}, {}'.format(prpecision.iloc[fp_max], recall.iloc[fp_max], fp.iloc[fp_max]))
