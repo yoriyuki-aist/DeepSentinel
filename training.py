@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import argparse
 import pickle
 from pathlib import Path
@@ -14,7 +12,6 @@ from log_model.logModel import LogModel
 
 if __name__ == '__main__':
 
-    #コマンドライン引数
     parser = argparse.ArgumentParser(description='Train a model')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
