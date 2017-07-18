@@ -47,4 +47,4 @@ if __name__ == '__main__':
     log['false_positive'] = fp
     log['recall'] = recall
 
-    print('AUC: {}'.format(metrics.auc(fp.values, recall.values)))
+    print('{}'.format(metrics.auc(fp.values, recall.values)))
