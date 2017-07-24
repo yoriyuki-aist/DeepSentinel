@@ -131,7 +131,10 @@ if __name__ == '__main__':
         recall = float ('nan')
     else:
         recall = n_true_pos / n_attack
-    f_score = 2 * precision * recall / (precision + recall)
+    if precision + recall == 0:
+        f_score = float ('nan')
+    else:
+        f_score = 2 * precision * recall / (precision + recall)
 
     if not (hasattr (args.log, 'write')):
         args.log = open (args.log, 'w')
