@@ -6,9 +6,12 @@ import matplotlib.font_manager
 from sklearn import svm
 from pathlib import Path
 import sys
+import time
 # from log_store import LogStore
 
 if __name__ == '__main__':
+    start_time = time.time ()
+
     default_kernel='rbf'
     default_nu=0.1
     default_gamma=0.1
@@ -50,6 +53,8 @@ if __name__ == '__main__':
 
     print("preprocessing...")
 
+    pp_start_time = time.time ()
+
     values = np.concatenate (log_store.train_v_seqs)
     positions = np.concatenate (log_store.train_p_seqs)
     data = np.concatenate ([values, positions], axis=1)
@@ -64,6 +69,8 @@ if __name__ == '__main__':
         print ('window\n', window)
         print ('data\n', data)
 
+    pp_end_time = time.time ()
+
     print("start learning...")
 
     if args.debug >= 1:
@@ -72,14 +79,31 @@ if __name__ == '__main__':
         print ('gamma =', args.gamma)
         print ('data :', data.shape)
 
+    learn_start_time = time.time ()
+
     model = svm.OneClassSVM (nu=args.nu, kernel=args.kernel, gamma=args.gamma)
     model.fit (data)
 
-    savefilename = '{}-svm-w{}-n{}-g{}-{}.pickle'.format (logname, args.window, args.nu, args.gamma, args.kernel)
+    learn_end_time = time.time ()
+
+    file_stem = '{}-svm-w{}-n{}-g{}-{}'.format (logname, args.window, args.nu, args.gamma, args.kernel)
+
+    savefilename = file_stem + '.pickle'
     savefile = (Path ('output') / savefilename)
     with savefile.open ('wb') as f:
         pickle.dump (model, f)
 
+    pred_start_time = time.time ()
+
     pred_train = model.predict (data)
     n_error_train = pred_train[pred_train == -1].size
     print ('error train: {}/{} = {}'.format (n_error_train, pred_train.size, n_error_train / pred_train.size))
+
+    pred_end_time = time.time ()
+    end_time = pred_end_time
+
+    with (Path ('output') / (file_stem + '.time')).open ('a') as f:
+        print ('preprocessing time: {}'.format (pp_end_time - pp_start_time), file=f)
+        print ('learning time:      {}'.format (learn_end_time - learn_start_time), file=f)
+        print ('scoring time:       {}'.format (pred_end_time - pred_start_time), file=f)
+        print ('total time:         {}'.format (end_time - start_time), file=f)

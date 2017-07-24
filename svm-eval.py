@@ -9,9 +9,11 @@ from pathlib import Path
 from storages.log_store import LogStore
 from tqdm import tqdm
 from functools import reduce
+import time
 # from log_store import LogStore
 
 if __name__ == '__main__':
+    start_time = time.time ()
     default_window = 1
     parser = argparse.ArgumentParser(description='Train a model')
     parser.add_argument('model', metavar='model',
@@ -68,6 +70,8 @@ if __name__ == '__main__':
 
     print("preprocessing...")
 
+    pp_start_time = time.time ()
+
     labels = np.concatenate (log_store.train_l_seqs)
     values = np.concatenate (log_store.train_v_seqs)
     positions = np.concatenate (log_store.train_p_seqs)
@@ -92,10 +96,14 @@ if __name__ == '__main__':
 
     print("start evaluating...")
 
+    pp_end_time = time.time ()
+
     if args.debug >= 1:
         print ('data :', data.shape)
     if args.debug >= 4:
         print ('data\n', data)
+
+    eval_start_time = time.time ()
 
     if savefile.exists ():
         print ('loading existing evaluation results...')
@@ -107,7 +115,11 @@ if __name__ == '__main__':
         with savefile.open ('wb') as f:
             pickle.dump ((is_normal, pred), f)
 
+    eval_end_time = time.time ()
+
     print ('compiling results...')
+
+    stat_start_time = time.time ()
 
     # NB: prediction values are -1 if attack, +1 if normal
     pred_normal = (pred == 1)
@@ -140,6 +152,9 @@ if __name__ == '__main__':
     else:
         f_score = 2 * precision * recall / (precision + recall)
 
+    stat_end_time = time.time ()
+    end_time = stat_end_time
+
     if not (hasattr (args.log, 'write')):
         args.log = open (args.log, 'w')
     def output (x):
@@ -149,6 +164,11 @@ if __name__ == '__main__':
     output ('training: {}'.format (normallogstore))
     output ('target:   {}'.format (args.target))
     output ('results saved in: {}'.format (savefile))
+    output ('')
+    output ('preprocessing time:    {}'.format (pp_end_time - pp_start_time))
+    output ('evaluation time:       {}'.format (eval_end_time - eval_start_time))
+    output ('stat compilation time: {}'.format (stat_end_time - stat_start_time))
+    output ('total time:            {}'.format (end_time - start_time))
     output ('')
     output ('normal entries:      {} / {} = {}'.format (
         n_normal, n_total, n_normal / n_total))
