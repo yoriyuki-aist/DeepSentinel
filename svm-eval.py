@@ -117,6 +117,8 @@ if __name__ == '__main__':
     n_true_pos  = np.count_nonzero (pred_attack * is_attack)
     n_false_neg = np.count_nonzero (pred_normal * is_attack)
     n_true_neg  = np.count_nonzero (pred_normal * is_normal)
+    n_pred_normal = np.count_nonzero (pred_normal)
+    n_pred_attack = pred_normal.size - n_pred_normal
     n_normal = np.count_nonzero (is_normal)
     n_attack = is_normal.size - n_normal
     n_total = is_normal.size
@@ -152,6 +154,10 @@ if __name__ == '__main__':
         n_normal, n_total, n_normal / n_total))
     output ('attack entries:      {} / {} = {}'.format (
         n_attack, n_total, n_attack / n_total))
+    output ('predicted normal:    {} / {} = {}'.format (
+        n_pred_normal, n_total, n_pred_attack / n_total))
+    output ('predicted attack:    {} / {} = {}'.format (
+        n_pred_attack, n_total, n_pred_attack / n_total))
     output ('correct predictions: {} / {} = {}'.format (
         n_correct, n_total, n_correct / n_total))
     output ('true positives:  {}'.format (n_true_pos))
