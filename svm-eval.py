@@ -109,11 +109,13 @@ if __name__ == '__main__':
 
     print ('compiling results...')
 
-    # NB: positive = attack, negative = normal
-    pred_normal = (pred == -1)
-    n_false_pos = np.count_nonzero ((1 - pred_normal) * is_normal)
-    n_true_pos  = np.count_nonzero ((1 - pred_normal) * (1 - is_normal))
-    n_false_neg = np.count_nonzero (pred_normal * (1 - is_normal))
+    # NB: prediction values are -1 if attack, +1 if normal
+    pred_normal = (pred == 1)
+    pred_attack = 1 - pred_normal
+    is_attack = 1 - is_normal
+    n_false_pos = np.count_nonzero (pred_attack * is_normal)
+    n_true_pos  = np.count_nonzero (pred_attack * is_attack)
+    n_false_neg = np.count_nonzero (pred_normal * is_attack)
     n_true_neg  = np.count_nonzero (pred_normal * is_normal)
     n_normal = np.count_nonzero (is_normal)
     n_attack = is_normal.size - n_normal
