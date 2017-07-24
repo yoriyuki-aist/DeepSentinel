@@ -37,6 +37,7 @@ if __name__ == '__main__':
 
     print ('loading model file...')
     modelfile = Path(args.model)
+    savefile = (modelfile.parent / (modelfile.stem + '-results.pickle'))
 
     with modelfile.open ('rb') as f:
         model = pickle.load (f)
@@ -96,13 +97,17 @@ if __name__ == '__main__':
     if args.debug >= 4:
         print ('data\n', data)
 
-    pred = model.predict (data)
+    if savefile.exists ():
+        print ('loading existing evaluation results...')
+        with savefile.open ('rb') as f:
+            (is_normal, pred) = pickle.load (f)
+    else:
+        pred = model.predict (data)
+
+        with savefile.open ('wb') as f:
+            pickle.dump ((is_normal, pred), f)
 
     print ('compiling results...')
-
-    savefile = (modelfile.parent / (modelfile.stem + '-results.pickle'))
-    with savefile.open ('wb') as f:
-        pickle.dump ((is_normal, pred), f)
 
     # NB: positive = attack, negative = normal
     pred_normal = (pred == -1)
