@@ -26,7 +26,10 @@ if __name__ == '__main__':
     else:
         sys.exit('No log file.')
 
-    scores = pd.read_csv(args.scorefile, header=None, names=['score'])
+    if Path(args.scorefile).exists():
+        scores = pd.read_csv(args.scorefile, header=None, names=['score'])
+    else:
+        sys.exit()
 
     log = pd.concat([log_store.log, scores], axis=1, join='inner')
 
