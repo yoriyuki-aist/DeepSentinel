@@ -48,7 +48,10 @@ if __name__ == '__main__':
     log['False Positive'] = fp
     log['True Positive'] = recall
 
-    log.plot.scatter(x='False Positive', y='True Positive')
+    log.plot.scatter(x='False Positive', y='True Positive', color='lightblue', lw = 0)
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.axis([0, 1, 0, 1])
     if args.imagefile is None:
         plt.show()
     else:
