@@ -26,6 +26,8 @@ if __name__ == '__main__':
                         help='Log file (for stats like F-score)')
     parser.add_argument('--window', '-w', type=int, default=default_window,
                         help='How many entries to mash into one sample [default: {}]'.format (default_window))
+    parser.add_argument('--hopping', action='store_true',
+                        help='Calculate scores with hopping windows'.format (default_window))
     parser.add_argument('--debug', metavar='N', type=int, default=0,
                         help='Level of debugging output')
 
@@ -39,7 +41,12 @@ if __name__ == '__main__':
 
     print ('loading model file...')
     modelfile = Path(args.model)
-    savefile = (modelfile.parent / (modelfile.stem + '-results.pickle'))
+    if args.hopping:
+        savefile = (modelfile.parent / (modelfile.stem + '-hopping-results.pickle'))
+    else:
+        savefile = (modelfile.parent / (modelfile.stem + '-results.pickle'))
+    if args.debug >= 2:
+        print ('save file name:', savefile)
 
     with modelfile.open ('rb') as f:
         model = pickle.load (f)
@@ -93,6 +100,18 @@ if __name__ == '__main__':
         print ('is_normal_window\n', is_normal_window)
         print ('data\n', data)
         print ('is_normal\n', is_normal)
+
+    if args.hopping:
+        if args.debug >= 1:
+            print ('converting data for hopping windows...')
+        data = data[::args.window]
+        is_normal = is_normal[::args.window]
+
+        if args.debug >= 4:
+            print ('window\n', window)
+            print ('is_normal_window\n', is_normal_window)
+            print ('data\n', data)
+            print ('is_normal\n', is_normal)
 
     print("start evaluating...")
 
