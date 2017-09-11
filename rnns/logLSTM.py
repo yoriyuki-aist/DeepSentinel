@@ -18,6 +18,10 @@ class LogLSTM(chainer.Chain):
         for i in range(position_units - 1):
             output_pos_mid_layers.add_link(L.Linear(n_units, n_units + position_num))
 
+        output_pos_mid_layers = chainer.ChainList()
+        for i in range(position_units - 1):
+            output_pos_mid_layers
+
         output_val_layers = chainer.ChainList()
         for i in range(value_units - 1):
             output_val_layers.add_link(L.Bilinear(1, n_units, n_units))

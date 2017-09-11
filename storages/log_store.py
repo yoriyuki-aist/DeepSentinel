@@ -59,6 +59,8 @@ discrete_labels = [
 ('P6', 'P602'),
 ('P6', 'P603'),]
 
+class_label=('P6', 'Normal/Attack')
+
 def chunked(seq, chunk_num):
     seq = seq[0:len(seq) // chunk_num * chunk_num]
     return np.split(seq, chunk_num)
@@ -89,19 +91,22 @@ class LogStore:
         else:
             zscore = lambda x: (x - normal.log[x.name].mean()) / normal.log[x.name].std()
             values = self.log[value_labels].apply(zscore)
-        values.fillna(0)
+        values.fillna(0, inplace=True)
 
         positions = self.log[discrete_labels]
 
         if normal is None:
+            l_seqs = chunked(self.log[class_label], 10)
             i_seqs = chunked(self.log.index.values, 10)
             v_seqs = chunked(values.values, 10)
             p_seqs = chunked(positions.values, 10)
         else:
+            l_seqs = chunked(self.log[class_label], 1)
             i_seqs = chunked(self.log.index.values, 1)
             v_seqs = chunked(values.values, 1)
             p_seqs = chunked(positions.values, 1)
 
+        self.train_l_seqs = l_seqs
         self.train_i_seqs = i_seqs
         self.test_i_seq = i_seqs[-1]
         self.train_v_seqs = v_seqs
