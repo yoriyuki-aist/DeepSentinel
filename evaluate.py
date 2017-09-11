@@ -16,7 +16,6 @@ from sklearn import metrics
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Compute outlier factors and evaluate them')
-    parser.add_argument('normal', metavar='NormalLog', help='Normal log')
     parser.add_argument('model', metavar='Modelile', help='Model file')
     parser.add_argument('logfile', metavar='Target', help='Log to be analyzed')
     parser.add_argument('output', metavar='Output', help='Output')
@@ -26,6 +25,7 @@ if __name__ == '__main__':
                         help='Number of n_units')
     parser.add_argument('--lstm', '-s', type=int, default=0,
                     help='the height of stacked LSTMs')
+    parser.add_argument('--activation', '-a', default='sigmoid', help='activation function')
     args = parser.parse_args()
 
     print('Creating output directory...')
@@ -35,18 +35,6 @@ if __name__ == '__main__':
         if not Path('output').is_dir():
             sys.exit('output is not a directory.')
 
-    normallogname = Path(args.normal).stem
-    normallogstore = (Path('output') / normallogname).with_suffix('.pickle')
-
-    print("loading normal log file...")
-    if normallogstore.exists():
-        with normallogstore.open(mode='rb') as normallogstorefile:
-            normal_log_store = pickle.load(normallogstorefile)
-    else:
-        normal_log_store = LogStore(args.normal)
-        with normallogstore.open(mode='wb') as f:
-            pickle.dump(normal_log_store, f)
-
     logname = Path(args.logfile).stem
     logstore = (Path('output') / logname).with_suffix('.pickle')
 
@@ -55,53 +43,17 @@ if __name__ == '__main__':
         with logstore.open(mode='rb') as logstorefile:
             log_store = pickle.load(logstorefile)
     else:
-        log_store = LogStore(args.logfile, normal_log_store)
-        with logstore.open(mode='wb') as f:
-            pickle.dump(log_store, f)
+        sys.exit('no logfile')
 
     print('loading model file...')
     if not Path(args.model).exists():
         sys.exit('model does not exists.')
     else:
-        log_model = LogModel(log_store, lstm_num=args.lstm, n_units=args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=args.model)
+        log_model = LogModel(log_store, lstm_num=args.lstm, n_units=args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=args.model, activation=args.activation)
 
     print("start evaluating...")
-    scores = list(log_model.eval(log_store.positions_seq, log_store.values_seq))
+    scores = list(log_model.eval(log_store))
     scores = np.array(scores, np.float32)
-    log = log_store.log
-    log['score'] = pd.Series(scores, log.index[:-1]).shift(1)
+    scores = pd.Series(scores, log_store.test_i_seq[1:])
 
-    n_a = log[('P6','Normal/Attack')]
-    normal_dummy = pd.get_dummies(n_a)['Normal']
-    log['Normal'] = normal_dummy
-    log['Attack'] = 1 - normal_dummy
-
-    log = log.sort_values(by='score', ascending=False)
-
-    correct_detection = log['Attack'].cumsum()
-    false_detection = log['Normal'].cumsum()
-
-    precision = correct_detection / (correct_detection + false_detection)
-    recall = correct_detection / (log['Attack'].sum())
-    fp = false_detection / (log['Normal'].sum())
-
-    f_value = 2 * precision * recall / (precision + recall)
-
-    log['precision'] = precision
-    log['recall'] = recall
-    log['false_positive'] = fp
-    log['f_value'] = f_value
-
-    max_f_index = f_value.idxmax()
-    print(max_f_index)
-    k = log['score'].loc[max_f_index]
-    f = log['f_value'].loc[max_f_index]
-    p = log['precision'].loc[max_f_index]
-    r = log['recall'].loc[max_f_index]
-    print("Threshold: {}, Precision: {}, Recall: {}, F value: {}".format(k, p, r, f))
-
-    judgements = pd.cut(log['score'].values, [log['score'].min(), k, log['score'].max()+1], right=False, labels=['N', 'A'])
-    log['judge'] = judgements
-
-    print('AUC: {}'.format(metrics.auc(fp.values, recall.values)))
-    log.to_excel(args.output)
+    scores.to_csv(args.output)

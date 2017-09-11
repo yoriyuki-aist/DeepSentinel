@@ -2,17 +2,9 @@ import pandas as pd
 import numpy as np
 import itertools
 import operator
+import pickle
 from pathlib import Path
-import re
-from tqdm import tqdm
 
-def batch_seq(seq, chunk_num):
-    seq = seq[0:len(seq) // chunk_num * chunk_num]
-    chunked = np.split(seq, chunk_num)
-    return np.stack(chunked, axis=-1)
-
-# labels for real swat log
-# simulated log does not have labels
 value_labels = [('P1', 'FIT101'),
 ('P1', 'LIT101'),
 ('P2', 'AIT201'),
@@ -67,52 +59,52 @@ discrete_labels = [
 ('P6', 'P602'),
 ('P6', 'P603'),]
 
+def chunked(seq, chunk_num):
+    seq = seq[0:len(seq) // chunk_num * chunk_num]
+    return np.split(seq, chunk_num)
 
 class LogStore:
-    def __init__(self, filename, normal=None, simulated=False, filenames=None):
-        if simulated:
-            self.filename = filename
-            logs = []
-            for path in tqdm(filenames):
-                with open(path) as f:
-                    log = []
-                    for line in tqdm(f):
-                        log.append(re.findall('[0-9.]+', line))
-                    log = np.array(log, dtype=np.float32)
-                    logs.append(log)
-            concat = np.concatenate(logs)
-            if normal is None:
-                self.means = np.mean(concat, axis=0)
-                self.stds = np.std(concat, axis=0)
-                logs = [(log - self.means) / self.stds for log in logs]
-            else:
-                logs = [(log - normal.means) / normal.stds for log in logs]
-            self.positions_seq = None
-            self.values_seq = np.stack(logs, axis=-1)
-            self.position_units = 0
-            self.value_units = logs[0].shape[1]
+    def __init__(self, filename, normal_filename=None):
+        self.position_units = len(discrete_labels)
+        self.value_units = len(value_labels)
 
+
+        self.log = pd.read_excel(filename, header=[0, 1])
+        self.log.index = pd.to_datetime(self.log.index)
+        self.filename = Path(filename).stem
+        #Assuming the log is continous
+
+        normal = None
+        if not normal_filename is None:
+            print("loading normal log file...")
+            normallogname = Path(normal_filename).stem
+            normallogstore = (Path('output') / normallogname).with_suffix('.pickle')
+            if normallogstore.exists():
+                with normallogstore.open(mode='rb') as normallogstorefile:
+                    normal = pickle.load(normallogstorefile)
+
+        if normal is None:
+            zscore = lambda x: (x - x.mean()) / x.std()
+            values = self.log[value_labels].apply(zscore)
         else:
-            log = pd.read_excel(filename, header=[0, 1])
-            log.index = self.log.index.to_datetime()
-            self.filename = Path(filename).stem
+            zscore = lambda x: (x - normal.log[x.name].mean()) / normal.log[x.name].std()
+            values = self.log[value_labels].apply(zscore)
+        values.fillna(0)
 
-            positions = self.log[discrete_labels]
-            self.positions_seq = positions.values
+        positions = self.log[discrete_labels]
 
-            #FIXME use a common code with for the simulated log
-            if normal is None:
-                self.means = [log.mean(label) for label in value_labels]
-                self.stds = [log.std(label) for label in value_labels]
-                zscore = lambda x: (x - self.means[x.name]) / self.stds[x.name]
-                values = log[value_labels].apply(zscore)
-            else:
-                zscore = lambda x: (x - normal.means[x.name]) / normal.stds[x.name]
-                values = log[value_labels].apply(zscore)
-            values.fillna(0)
+        if normal is None:
+            i_seqs = chunked(self.log.index.values, 10)
+            v_seqs = chunked(values.values, 10)
+            p_seqs = chunked(positions.values, 10)
+        else:
+            i_seqs = chunked(self.log.index.values, 1)
+            v_seqs = chunked(values.values, 1)
+            p_seqs = chunked(positions.values, 1)
 
-            #FIXME Need chunking here
-            self.values_seq = values.values
-
-            self.position_units = len(discrete_labels)
-            self.value_units = len(value_labels)
+        self.train_i_seqs = i_seqs
+        self.test_i_seq = i_seqs[-1]
+        self.train_v_seqs = v_seqs
+        self.test_v_seq = v_seqs[-1]
+        self.train_p_seqs = p_seqs
+        self.test_p_seq = p_seqs[-1]

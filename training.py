@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import argparse
 import pickle
 from pathlib import Path
@@ -14,7 +12,6 @@ from log_model.logModel import LogModel
 
 if __name__ == '__main__':
 
-    #コマンドライン引数
     parser = argparse.ArgumentParser(description='Train a model')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
@@ -27,7 +24,9 @@ if __name__ == '__main__':
     parser.add_argument('--cont', '-c', default=False,
                 help='Continue to learn')
     parser.add_argument('logfile', metavar='F', help='Normal log file')
-
+    parser.add_argument('--dropout', '-d', type=bool, default=True,     help='Dropout')
+    parser.add_argument('--activation', '-a', help='activation function')
+    parser.add_argument('--testonly', '-t', type=bool, default=False, help='Eval only')
     args = parser.parse_args()
 
 
@@ -52,19 +51,21 @@ if __name__ == '__main__':
     optimizer_file = None
     if args.cont:
         for epoch in range(args.iter, -1, -1):
-            log_model_name = logname + "-model-{}-{}-{}-lstms".format(args.lstm, args.n_units, epoch)
+            log_model_name = logname + "-model-{}-{}-dropout-{}-{}-{}-lstms".format(args.lstm, args.n_units, args.dropout, args.activation, epoch)
             model_path = (Path('output') / log_model_name).with_suffix('.npz')
             if model_path.exists():
                 logLSTM_file = model_path.as_posix()
 
-                optimizer_name = logname + "-model-{}-{}-{}-optimizer".format(args.lstm, args.n_units, epoch)
+                optimizer_name = logname + "-model-{}-{}-dropout-{}-{}-{}-optimizer".format(args.lstm, args.n_units, args.dropout, args.activation, epoch)
                 optimizer_path = (Path('output') / optimizer_name).with_suffix('.npz')
                 if optimizer_path.exists():
                     optimizer_file = optimizer_path.as_posix()
                 break
-    log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=logLSTM_file, optimizer_file=optimizer_file, current_epoch=epoch)
+    log_model = LogModel(log_store, args.lstm, args.n_units, gpu=args.gpu, directory='output/', logLSTM_file=logLSTM_file, optimizer_file=optimizer_file, current_epoch=epoch, dropout=args.dropout, activation=args.activation)
 
-    if log_model.current_epoch == args.iter:
+    if args.testonly:
+        log_model.test()
+    elif log_model.current_epoch == args.iter:
         pass
     else:
         log_model.train(args.iter)
