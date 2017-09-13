@@ -54,5 +54,7 @@ if __name__ == '__main__':
 
     threshold = log['score'][f_max]
     verdict = scores >= threshold
-    output_log = pd.concat([log_store.log, scores, verdict], axis=1, join='inner')
+    output_log = log_store.log
+    output_log['Score'] = scores
+    output_log['Verdict'] = verdict
     output_log.to_csv(args.outputfile)
