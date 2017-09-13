@@ -15,6 +15,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Precision-Recall-Fmeasure')
     parser.add_argument('logfile', metavar='Target', help='Log to be analyzed')
     parser.add_argument('scorefile', metavar='Scores', help='Scores')
+    parser.add_argument('outputfile', metavar='Outputfile', help='output file')
     args = parser.parse_args()
 
     logname = Path(args.logfile).stem
@@ -50,3 +51,8 @@ if __name__ == '__main__':
 
     f_max = f.idxmax()
     print('{}, {}, {}'.format(precision[f_max], recall[f_max], f[f_max]))
+
+    threshold = log['score'][f_max]
+    verdict = scores >= threshold
+    output_log = pd.concat([log_store.log, scores, verdict], axis=1, join='inner')
+    output_log.to_csv(args.outputfile)
