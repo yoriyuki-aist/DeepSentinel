@@ -72,7 +72,7 @@ class LogStore:
 
 
         self.log = pd.read_excel(filename, header=[0, 1])
-        self.log.index = pd.to_datetime(self.log.index)
+        self.log.index = pd.to_datetime(self.log.index, dayfirst=True)
         self.filename = Path(filename).stem
         #Assuming the log is continous
 

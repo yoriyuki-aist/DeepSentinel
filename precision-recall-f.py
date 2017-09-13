@@ -52,9 +52,11 @@ if __name__ == '__main__':
     f_max = f.idxmax()
     print('{}, {}, {}'.format(precision[f_max], recall[f_max], f[f_max]))
 
+    scores = pd.read_csv(args.scorefile, header=None, names=['Score'])
     threshold = log['score'][f_max]
-    verdict = scores >= threshold
+    verdict = (scores >= threshold).rename(columns={'Score':'Verdict'})
+    print(verdict)
+    data = pd.concat([scores, verdict], axis=1, join='inner')
     output_log = log_store.log
-    output_log['Score'] = scores
-    output_log['Verdict'] = verdict
+    output_log = pd.concat([output_log, data], axis=1, join='inner')
     output_log.to_csv(args.outputfile)
