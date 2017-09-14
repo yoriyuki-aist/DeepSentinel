@@ -55,7 +55,6 @@ if __name__ == '__main__':
     scores = pd.read_csv(args.scorefile, header=None, names=['Score'])
     threshold = log['score'][f_max]
     verdict = (scores >= threshold).rename(columns={'Score':'Verdict'})
-    print(verdict)
     data = pd.concat([scores, verdict], axis=1, join='inner')
     output_log = log_store.log
     output_log = pd.concat([output_log, data], axis=1, join='inner')
