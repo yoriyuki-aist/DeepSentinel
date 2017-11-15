@@ -1,10 +1,10 @@
 #!/bin/bash
 #PBS --group=g-sarg
-#PBS -q gq
+#PBS -q gq-long
 #PBS -b 1
 #PBS -l cpunum_job=1
 #PBS -l gpunum_job=1
-#PBS -l elapstim_req=72:00:00
+#PBS -l elapstim_req=336:00:00
 #PBS -M yoriyuki.yamagata@aist.go.jp
 #PBS -m e
 
