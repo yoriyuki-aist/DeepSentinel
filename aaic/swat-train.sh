@@ -12,4 +12,4 @@ module switch cuda/8.0 cuda/8.0.61+cudnn-6.0.21+nccl-1.3.4-1
 source activate swat-analyzer
 
 cd ${WD}
-python training.py -n ${N_UNITS} -i ${ITER} -s 1 -c true -d true -a ${ACTIVATION} -g 0 SWaT_Dataset_Normal_v0
+python training.py -n ${N_UNITS} -i ${ITER} -s ${LSTM} -c true -d true -a ${ACTIVATION} -g 0 SWaT_Dataset_Normal_v0

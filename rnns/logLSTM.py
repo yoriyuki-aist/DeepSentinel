@@ -18,10 +18,6 @@ class LogLSTM(chainer.Chain):
         for i in range(position_units - 1):
             output_pos_mid_layers.add_link(L.Linear(n_units, n_units + position_num))
 
-        output_pos_mid_layers = chainer.ChainList()
-        for i in range(position_units - 1):
-            output_pos_mid_layers
-
         output_val_layers = chainer.ChainList()
         for i in range(value_units - 1):
             output_val_layers.add_link(L.Bilinear(1, n_units, n_units))
@@ -32,6 +28,7 @@ class LogLSTM(chainer.Chain):
 
         super(LogLSTM, self).__init__(
             input_layer = L.Linear(position_num * position_units + value_units, n_units),
+            input_mid_layer = L.Linear(n_units, n_units),
             lstms = lstm_stack,
             output_pos1 = L.Linear(n_units, position_num),
             output_pos_layers = output_pos_layers,
@@ -93,7 +90,8 @@ class LogLSTM(chainer.Chain):
         ps_in_dm = F.reshape(ps_in_dm, (ps_in_dm.shape[0], self.position_num * self.position_units))
 
         vs_in = Variable(xp.array(values_cur.T, dtype=xp.float32))
-        h = F.dropout(self.input_layer(F.concat((ps_in_dm,vs_in))))
+        y = F.dropout(self.input_layer(F.concat((ps_in_dm,vs_in))))
+        h = F.dropout(self.input_mid_layer(y))
         for i in range(self.lstm_num):
             h = F.dropout(self.lstms[i](h))
 
