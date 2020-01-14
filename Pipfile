@@ -16,3 +16,6 @@ scipy = ">=1.2"
 
 [requires]
 python_version = "3.7"
+
+[scripts]
+test = "py.test -v"
