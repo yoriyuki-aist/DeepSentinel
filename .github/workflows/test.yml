@@ -1,0 +1,38 @@
+name: Test
+
+on: [push]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        python:
+          - 3.5.x
+          - 3.6.x
+          - 3.7.x
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+
+      - name: Setup python ${{ matrix.python }}
+        uses: actions/python-setup@v1
+        with:
+          python-version: ${{ matrix.python }}
+
+      - uses: actions/cache@v1
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('Pipfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - uses: Install pipenv
+        run: pip install pipenv
+
+      - uses: Install dependencies of this package
+        run: pipenv sync --dev
+
+      - uses: Run tests
+        run: pipenv run test
