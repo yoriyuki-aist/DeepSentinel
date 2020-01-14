@@ -5,6 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 pytest = "*"
+tox = "*"
 
 [packages]
 chainer = ">=5.3.0"
