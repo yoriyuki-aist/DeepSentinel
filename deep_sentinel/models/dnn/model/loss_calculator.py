@@ -66,7 +66,7 @@ class LossCalculator(L.Classifier):
         super(LossCalculator, self).__init__(*args, **kwargs)
         self.compute_accuracy = False
         self.is_training = True
-        self.predictor: 'Union[DeepSentinel, DeepSentinelWithoutDiscrete]'
+        self.predictor = None  # type: 'Union[DeepSentinel, DeepSentinelWithoutDiscrete]'
 
     def set_as_predict(self):
         self.is_training = False

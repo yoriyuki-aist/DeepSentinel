@@ -155,9 +155,9 @@ class Trainer(object):
                                    Validator(iterator={'main': valid_iter},
                                              target=eval_model, device=self.device),
                                    {'name': 'val'})
-        logger.debug(f"Logging triggered per {log_trigger[0]} {log_trigger[1]}")
+        logger.debug("Logging triggered per {} {}".format(*log_trigger))
         for extension in self.trainer_extensions:
-            logger.debug(f"Enable '{extension['name']}' extension")
+            logger.debug("Enable '{}' extension".format(extension["name"]))
             trainer.extend(extension['extension'], **extension['kwargs'])
 
         trainer.run()

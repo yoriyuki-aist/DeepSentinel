@@ -26,7 +26,7 @@ class DeepSentinel(Chain):
         :param gmm_classes: Number of Gaussian distribution to use for GMM
         """
         assert activation_func_type.lower() in ActivationFunc.choices(), \
-            f"`{activation_func_type}` is not supported."
+            "`{}` is not supported.".format(activation_func_type)
         assert 0 <= dropout_ratio < 1, "`dropout_ratio` must be 0 <= `dropout_ratio` < 1."
         super(DeepSentinel, self).__init__()
         self.discrete_unit_count = discrete_unit_count
@@ -168,7 +168,7 @@ class DeepSentinelWithoutDiscrete(Chain):
         :param dropout_ratio: Dropout ratio. Default is 0.5
         """
         assert activation_func_type.lower() in ActivationFunc.choices(), \
-            f"`{activation_func_type}` is not supported."
+            "`{}` is not supported.".format(activation_func_type)
         assert 0 <= dropout_ratio < 1, "`dropout_ratio` must be 0 <= `dropout_ratio` < 1."
         super(DeepSentinelWithoutDiscrete, self).__init__()
         self.continuous_unit_count = continuous_unit_count

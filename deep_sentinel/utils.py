@@ -20,7 +20,7 @@ def to_path(p: 'Union[str, Path]') -> 'Path':
     elif isinstance(p, str):
         return Path(p)
     else:
-        raise TypeError(f"str or Path is expected, but actual {p.__class__.__name__}")
+        raise TypeError("str or Path is expected, but actual {}".format(p.__class__.__name__))
 
 
 def to_absolute(p: 'Path') -> 'Path':

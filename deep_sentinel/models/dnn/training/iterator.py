@@ -71,7 +71,7 @@ class MultipleSequenceIterator(Iterator):
 
     def __init__(self, datasets: 'List[Union[DictDataset, SubDataset]]', batch_ratio: int = 1, repeat: bool = True):
         if not isinstance(batch_ratio, int) and batch_ratio >= 1:
-            raise TypeError(f"'batch_ratio' must be a positive integer. But actual '{batch_ratio}'")
+            raise TypeError("'batch_ratio' must be a positive integer. But actual '{}'".format(batch_ratio))
         if len(datasets) == 0:
             raise ValueError("'datasets' must have one or more elements at least.")
         # All dataset instance have the same length
@@ -80,7 +80,7 @@ class MultipleSequenceIterator(Iterator):
             if length is None:
                 length = len(datasets[i])
             elif length != len(datasets[i]):
-                raise ValueError(f"dataset length conflict at {i} th attr.")
+                raise ValueError("dataset length conflict at {} th attr.".format(i))
         self.datasets = [ParallelSequentialIterator(d, batch_ratio, repeat) for d in datasets]
 
     def __next__(self):

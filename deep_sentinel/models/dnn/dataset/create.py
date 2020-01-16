@@ -19,8 +19,8 @@ logger = getLogger(__name__)
 def _sliding_window(x: 'np.ndarray', window: int):
     dataset_length = x.shape[0]
     if window > dataset_length:
-        logger.warning(f"The size of `bprop_length` {window} is larger than dataset size {dataset_length}."
-                       f" Use dataset size instead.")
+        logger.warning("The size of `bprop_length` {} is larger than dataset size {}."
+                       " Use dataset size instead.".format(window, dataset_length))
         window = dataset_length
     return [x[i:i + window] for i in range(0, dataset_length, window)]
 
@@ -43,6 +43,6 @@ def split_dataset(dataset: 'DictDataset', train_ratio: float = 0.8) -> 'Tuple[Su
     assert 0 < train_ratio < 1, "`train_ratio` size must be greater than 0 and smaller than 1"
     split_at = int(len(dataset) * train_ratio)
     if split_at == 0:
-        raise ValueError(f"Insufficient data set length to split. "
-                         f"Is the size of `bprop_length` too large or given dataset wrong?")
+        raise ValueError("Insufficient data set length to split. "
+                         "Is the size of `bprop_length` too large or given dataset wrong?")
     return _split_dataset(dataset, split_at)

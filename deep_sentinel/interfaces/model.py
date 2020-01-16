@@ -34,7 +34,7 @@ class Model(metaclass=ABCMeta):
         for key, val in metadata.items():
             current = getattr(self, key)
             if current is not None and current != val:
-                logger.warning(f"Override {key}: {current} -> {val}")
+                logger.warning("Override {}: {} -> {}".format(key, current, val))
             setattr(self, key, val)
 
     @abstractmethod

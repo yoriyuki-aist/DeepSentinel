@@ -40,7 +40,7 @@ class DNN(Model):
                  activation: str, bprop_length: int, max_epoch: int, output_dir: 'Union[str, Path]',
                  gmm_classes: int):
         super(DNN, self).__init__()
-        logger.debug(f"Model params: " + str(
+        logger.debug("Model params: " + str(
             {
                 "batch_size": batch_size,
                 "device": device,
@@ -118,7 +118,7 @@ class DNN(Model):
 
     def fit_all(self, x: 'List[pd.DataFrame]', batch_ratio: int = 1) -> 'Tuple[Model, Optional[float, np.ndarray]]':
         if not isinstance(batch_ratio, int) or batch_ratio < 1:
-            raise ValueError(f"'batch_ratio' must be a positive integer.")
+            raise ValueError("'batch_ratio' must be a positive integer.")
         self._register_train_data(pd.concat(x, axis=0))
         dict_datasets = [self._create_dataset(_x) for _x in x]
 
@@ -130,14 +130,14 @@ class DNN(Model):
                 break
             batch_ratio -= 1
         if batch_ratio != orig_batch_ratio:
-            logger.warning(f"Specified batch_ratio is too large. "
-                           f"Use {batch_ratio} instead of {orig_batch_ratio}")
+            logger.warning('Specified batch_ratio is too large. '
+                           'Use {} instead of {}'.format(batch_ratio, orig_batch_ratio))
             batch_ratio = 1
 
         # Check the actual minibatch size
         batch_size = len(dict_datasets) * batch_ratio
         if self.batch_size != batch_size:
-            logger.warning(f"Actual minibatch size becomes {batch_size} not {self.batch_size}")
+            logger.warning("Actual minibatch size becomes {} not {}".format(batch_ratio, self.batch_size))
 
         separated = [split_dataset(d) for d in dict_datasets]
         train_data = [s[0] for s in separated]
@@ -312,7 +312,7 @@ class DNN(Model):
                 lstm_stack=self.lstm_stack,
                 gmm_class_count=self.gmm_classes
             )
-        logger.debug(f"Model type: {model.__class__}")
+        logger.debug("Model type: {}".format(model.__class__))
         return LossCalculator(model)
 
     def get_trainer(self, train_data, val_data, output_dir: str) -> 'Trainer':
