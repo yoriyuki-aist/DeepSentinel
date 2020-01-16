@@ -26,6 +26,7 @@ def _sliding_window(x: 'np.ndarray', window: int):
 
 
 def create_dataset(continuous: 'pd.DataFrame', discrete: 'pd.DataFrame', window: int) -> 'DictDataset':
+    assert window > 0, "Window size must be greater than 0"
     continuous = continuous.values.astype(np.float32)
     values_dict = {
         CURRENT_CONTINUOUS: _sliding_window(continuous[:-1], window),
@@ -39,6 +40,7 @@ def create_dataset(continuous: 'pd.DataFrame', discrete: 'pd.DataFrame', window:
 
 
 def split_dataset(dataset: 'DictDataset', train_ratio: float = 0.8) -> 'Tuple[SubDataset, SubDataset]':
+    assert 0 < train_ratio < 1, "`train_ratio` size must be greater than 0 and smaller than 1"
     split_at = int(len(dataset) * train_ratio)
     if split_at == 0:
         raise ValueError(f"Insufficient data set length to split. "
