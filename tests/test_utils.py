@@ -65,7 +65,7 @@ class TestToAbsolute(object):
 @pytest.mark.parametrize(
     "path,exists", [
         (Path("a"), True),
-        (Path("a"), False),
+        (Path("b"), False),
         (Path("../"), True),
     ]
 )
@@ -94,6 +94,7 @@ class TestMkdir(object):
             path.mkdir(parents=True)
         actual = utils.mkdir(path)
         assert isinstance(actual, Path)
+        assert actual.exists()
         assert actual.is_absolute()
 
     @pytest.mark.parametrize(
@@ -104,6 +105,8 @@ class TestMkdir(object):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open('w') as fp:
             fp.write("Hello")
+        assert path.exists()
+        assert path.is_file()
         with pytest.raises(NotADirectoryError):
             utils.mkdir(path)
 

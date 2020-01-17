@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import time
 from datetime import datetime
 from multiprocessing import Pool
@@ -24,6 +25,12 @@ def to_path(p: 'Union[str, Path]') -> 'Path':
 
 
 def to_absolute(p: 'Path') -> 'Path':
+    if p.is_absolute():
+        return p
+    # Workaround for Python 3.5
+    # Python 3.5's `pathlib.Path.resolve()` raises FileNotFoundError if the path doesn't exist.
+    if sys.version_info < (3, 6):
+        return Path(os.path.abspath(os.path.expanduser(p.name)))
     return p.expanduser().resolve()
 
 
