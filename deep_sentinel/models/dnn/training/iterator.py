@@ -15,6 +15,12 @@ class ParallelSequentialIterator(Iterator):
         self.repeat = repeat
         self.epoch = 0
         self.dataset_length = len(dataset)
+
+        assert self.dataset_length >= self.batch_size,\
+            "Batch size ({}) must be smaller than dataset size ({}).".format(
+                self.batch_size, self.dataset_length
+            )
+
         self.is_new_epoch = False
         self.offsets = [i * self.dataset_length // self.batch_size for i in range(self.batch_size)]
         self.iteration = 0
@@ -70,8 +76,10 @@ class MultipleSequenceIterator(Iterator):
     """Iterator for multiple DictDataset"""
 
     def __init__(self, datasets: 'List[Union[DictDataset, SubDataset]]', batch_ratio: int = 1, repeat: bool = True):
-        if not isinstance(batch_ratio, int) and batch_ratio >= 1:
-            raise TypeError("'batch_ratio' must be a positive integer. But actual '{}'".format(batch_ratio))
+        if not isinstance(batch_ratio, int):
+            raise TypeError("'batch_ratio' must be a integer. But actual '{}'".format(type(batch_ratio)))
+        if batch_ratio < 1:
+            raise ValueError("'batch_ratio' must be a positive integer. But actual '{}'".format(batch_ratio))
         if len(datasets) == 0:
             raise ValueError("'datasets' must have one or more elements at least.")
         # All dataset instance have the same length
