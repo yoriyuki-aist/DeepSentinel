@@ -4,9 +4,8 @@ from chainer import functions as F, links as L
 from chainer import reporter
 
 if TYPE_CHECKING:
-    from typing import Optional, Tuple, Union
+    from typing import Optional, Tuple
     from chainer import Variable
-    from .model import DeepSentinelWithoutDiscrete, DeepSentinel
 
 
 def calculate_continuous_value_loss(predicted: 'Variable', actual: 'Variable') -> 'Variable':
@@ -35,7 +34,7 @@ def calculate_discrete_value_loss(predicted: 'Variable', actual: 'Variable') -> 
     time_length = actual.shape[1]
     columns = actual.shape[2]
     actual = actual.reshape(batch_size * time_length, columns)
-    predicted = F.transpose(predicted, (0, 1, 3, 2))\
+    predicted = F.transpose(predicted, (0, 1, 3, 2)) \
         .reshape(batch_size * time_length, -1, columns)
     loss = F.softmax_cross_entropy(predicted, actual, reduce='no')
     return loss.reshape(batch_size, time_length, -1)
@@ -66,7 +65,6 @@ class LossCalculator(L.Classifier):
         super(LossCalculator, self).__init__(*args, **kwargs)
         self.compute_accuracy = False
         self.is_training = True
-        self.predictor = None  # type: 'Union[DeepSentinel, DeepSentinelWithoutDiscrete]'
 
     def set_as_predict(self):
         self.is_training = False
@@ -74,7 +72,7 @@ class LossCalculator(L.Classifier):
     def __call__(self, current_continuous: 'Variable', next_continuous: 'Variable',
                  current_discrete: 'Optional[Variable]' = None, next_discrete: 'Optional[Variable]' = None):
         self.loss = None
-        if current_discrete is not None:
+        if current_discrete is not None and next_discrete is not None:
             predicted_values, predicted_discretes = self.predictor(
                 current_continuous, next_continuous, current_discrete, next_discrete
             )
