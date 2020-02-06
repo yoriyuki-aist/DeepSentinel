@@ -6,13 +6,13 @@ from .layers import mid, output
 from .utils import create_onehot_vector
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from typing import Callable, List
     from chainer import Variable
 
 
 def _sample(predicted_probabilities: 'Variable') -> 'Variable':
     """Return most probable values"""
-    return F.max(predicted_probabilities, axis=2)
+    return F.cast(F.max(predicted_probabilities, axis=-1, keepdims=True), "int")
 
 
 class DiscretePredictor(Chain):
@@ -51,16 +51,16 @@ class DiscretePredictor(Chain):
             self.mid_layers = mid_layers
             self.output_layers = output_layers
 
-    def __call__(self, hidden_state: 'Variable', next_position_values: 'Variable') -> ('Variable', 'Variable'):
+    def __call__(self, hidden_state: 'Variable', next_position_values: 'Variable') -> ('Variable', 'List[Variable]'):
         """
         Forward calculation
-        :param hidden_state: Output of each time step of LSTM. The shape is `(B, C, H)`,
-        where `B` is mini batch size, `C` is chunk size, `H` is size of hidden state.
+        :param hidden_state:         Output of each time step of LSTM. The shape is `(B, C, H)`,
+                                     where `B` is mini batch size, `C` is chunk size, `H` is size of hidden state.
         :param next_position_values: The position state values at next time step. The shape
-        is `(B, C, N)`, where `N` is number of unit.
+                                     is `(B, C, N)`, where `N` is number of unit.
         :return: Final hidden state, and list of probability of state for each unit.
-        The shape of final hidden state is as same as input hidden state. The shape of list
-        elements is `(B, C, K)`, where K is `position_state_kinds`. The length of list is as same as `N`.
+                 The shape of final hidden state is as same as input hidden state. The shape of list
+                 elements is `(B, C, K)`, where K is `position_state_kinds`. The length of list is as same as `N`.
         """
         batch_size = next_position_values.shape[0]
         chunk_size = next_position_values.shape[1]
@@ -82,14 +82,16 @@ class DiscretePredictor(Chain):
         :param hidden_state: Output of PositionStatePredictor
         :return: Final hidden state and predicted values, predicted mean and variance
         """
-        hidden_state, predicted = self.first_output_layer(hidden_state)
+        batch_size = hidden_state.shape[0]
+        hidden_state, predicted = self.first_output_layer(hidden_state, 1)
         # Sampling next values
         next_value = _sample(predicted)
         predicted_distributions = [predicted]
         predicted_values = [next_value]
         for i in range(self.unit_count - 1):
-            mid_output = self.mid_layers[i](next_value, hidden_state)
-            hidden_state, predicted = self.output_layers[i](mid_output)
+            oh_vec = F.reshape(create_onehot_vector(next_value, self.state_kinds), (batch_size, self.state_kinds))
+            mid_output = self.mid_layers[i](oh_vec, hidden_state)
+            hidden_state, predicted = self.output_layers[i](mid_output, 1)
             next_value = _sample(predicted)
             predicted_distributions.append(predicted)
             predicted_values.append(next_value)

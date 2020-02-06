@@ -41,6 +41,11 @@ def dropout_func():
                 [[[0, 0, 0], [0, 0, 0]]],
                 2,
         ),
+        (
+                # Batch=1, window=1, n_units=1
+                [[[0]]],
+                2,
+        ),
     ]
 )
 def test_output_layer(data, output_kinds, activate_func, dropout_func):

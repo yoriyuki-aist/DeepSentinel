@@ -5,7 +5,7 @@ from chainer import Chain, ChainList, functions as F, distributions as D
 from .layers import mid, output
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from typing import Callable, List
     from chainer import Variable
 
 
@@ -27,8 +27,8 @@ def _sample(predicted: 'Variable') -> 'Variable':
         scale = F.select_item(scale, idx)
     else:
         mean, scale = F.split_axis(predicted, 2, axis=-1)
-    val = F.gaussian(mean, scale)
-    return val
+    val = F.squeeze(F.gaussian(mean, scale))
+    return val.reshape(predicted.shape[0], 1)
 
 
 class ContinuousPredictor(Chain):
@@ -70,7 +70,7 @@ class ContinuousPredictor(Chain):
             self.mid_layers = mid_layers
             self.output_layers = output_layers
 
-    def forward(self, hidden_state: 'Variable', next_value: 'Variable') -> ('Variable', 'Variable'):
+    def forward(self, hidden_state: 'Variable', next_value: 'Variable') -> ('Variable', 'List[Variable]'):
         """
         Forward calculation
         :param hidden_state:    Output of `PositionStatePredictor`. The shape is `(B, C, H)`,
