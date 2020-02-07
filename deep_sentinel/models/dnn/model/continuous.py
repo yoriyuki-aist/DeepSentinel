@@ -28,7 +28,7 @@ def _sample(predicted: 'Variable') -> 'Variable':
     else:
         mean, scale = F.split_axis(predicted, 2, axis=-1)
     val = F.squeeze(F.gaussian(mean, scale))
-    return val.reshape(predicted.shape[0], 1)
+    return val.reshape(predicted.shape[0])
 
 
 class ContinuousPredictor(Chain):

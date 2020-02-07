@@ -119,7 +119,7 @@ class DeepSentinel(Chain):
         )
         return self
 
-    def sample(self, steps: int) -> '(Variable, Variable, Variable, Variable)':
+    def sample(self, steps: int) -> '(Variable, Variable)':
         """
         Execute multi step prediction. Use initial values to initialize the state of model.
         Then, start prediction until specified step. This method do not require the values
@@ -127,28 +127,28 @@ class DeepSentinel(Chain):
         :param steps:   Number of steps to predict
         :return: Predicted values, and predicted distribution.
         """
-        assert self.prev_hidden_state is not None, "YOu should call `initialize_with()` before sampling"
-        position_values_set = list()
-        position_probability_set = list()
-        continuous_values_set = list()
-        continuous_distribution_set = list()
+        assert self.prev_hidden_state is not None, "You should call `initialize_with()` before sampling"
+        batch_size = self.prev_hidden_state.shape[1]
+        values_set = list()
+        states_set = list()
         for i in range(steps):
             # Reshape to `(B, L, K)` from `(L, B, K)`. `L` means LSTM stack (always 1 here).
-            hidden_state = F.swapaxes(self.prev_hidden_state[-1:], 0, 1)
-            hidden_state, predicted_values, predicted_dists = self.discrete_predictor.sample(hidden_state)
-            position_values_set.append(predicted_values)
-            position_probability_set.append(predicted_dists)
-            hidden_state, predicted_values, predicted_dists = self.continuous_predictor.sample(hidden_state)
-            continuous_values_set.append(predicted_values)
-            continuous_distribution_set.append(predicted_dists)
-            inputs = self._convert_to_input(position_values_set[-1], continuous_values_set[-1])
+            hidden_state = self.prev_hidden_state[-1]
+            hidden_state, predicted_states = self.discrete_predictor.sample(hidden_state)
+            states_set.append(predicted_states)
+            oh_vec = create_onehot_vector(predicted_states, self.discrete_state_kinds)\
+                .reshape(predicted_states.shape[0], predicted_states.shape[-1] * self.discrete_state_kinds)
+            hidden_state, predicted_values = self.continuous_predictor.sample(hidden_state)
+            cur_values = F.concat([oh_vec, predicted_values], axis=-1)
+            input_val = self.input_layer(cur_values, 1)
             self.prev_hidden_state, self.prev_cell_state, _ = self.lstm(
-                self.prev_hidden_state, self.prev_cell_state, F.separate(self.input_layer(inputs, 2))
+                self.prev_hidden_state, self.prev_cell_state,
+                F.split_axis(input_val, input_val.shape[0], axis=0)
             )
-        return (
-            F.hstack(continuous_values_set), F.hstack(continuous_distribution_set),
-            F.hstack(position_values_set), F.hstack(position_probability_set)
-        )
+            values_set.append(predicted_values)
+        values_set = F.stack(values_set, axis=1).reshape(batch_size, steps, self.continuous_unit_count)
+        states_set = F.stack(states_set, axis=1).reshape(batch_size, steps, self.discrete_unit_count)
+        return values_set, states_set
 
     def reset_state(self):
         """Reset the states of NStepLSTM"""
@@ -250,7 +250,7 @@ class DeepSentinelWithoutDiscrete(Chain):
             )
             values_set.append(predicted_values)
         values_set = F.stack(values_set, axis=1).reshape(batch_size, steps, self.continuous_unit_count)
-        return values_set
+        return values_set, None
 
     def reset_state(self):
         """Reset the states of NStepLSTM"""

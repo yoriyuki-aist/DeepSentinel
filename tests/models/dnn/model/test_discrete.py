@@ -54,19 +54,17 @@ class TestDiscretePredictor(object):
 
     @pytest.mark.parametrize(
         "b,h,f,gmm_classes,state_kinds", [
-            (1, 1, 1, 1, 2),
-            (2, 2, 2, 1, 2),
-            (1, 1, 1, 3, 2),
-            (2, 2, 2, 3, 2),
+            (1, 1, 1, 1, 3),
+            (2, 2, 2, 1, 3),
+            (1, 1, 1, 3, 3),
+            (2, 2, 2, 3, 3),
         ]
     )
     def test_sample(self, b, h, f, gmm_classes, state_kinds, activate_func, dropout_func):
         dp = discrete.DiscretePredictor(f, state_kinds, h, activate_func, dropout_func)
-        hidden = Variable(np.zeros((b * 1, h)).astype(np.float32))
-        final_hidden, predicted_values, predicted_dists = dp.sample(hidden)
+        hidden = Variable(np.zeros((b, h)).astype(np.float32))
+        final_hidden, predicted_values = dp.sample(hidden)
         assert type(final_hidden) == Variable
         assert final_hidden.shape == (b, h)
         assert type(predicted_values) == Variable
-        assert predicted_values.shape == (b, f, 1)
-        assert type(predicted_dists) == Variable
-        assert predicted_dists.shape == (b, f, state_kinds)
+        assert predicted_values.shape == (b, f)

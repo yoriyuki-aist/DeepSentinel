@@ -27,6 +27,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _cut_array(arr: 'np.ndarray', length: int) -> 'np.ndarray':
+    # The shape of array is `(trials, time length, data dimension)`
+    if arr.shape[0] > length:
+        return arr[:length]
+    return arr
+
+
 class DNN(Model):
     """Wrapper module of DNN model. Organize training and prediction tasks."""
 
@@ -233,31 +240,35 @@ class DNN(Model):
         self.bprop_length = tmp
         return results
 
-    def _sample(self, steps: int) -> 'Tuple[np.ndarray, np.ndarray]':
+    def _sample(self, steps: int) -> 'Tuple[np.ndarray, Optional[np.ndarray]]':
         model = self._model.copy(mode='copy')
         with chainer.using_config('train', False):
             with chainer.function.no_backprop_mode():
                 vals = model.sample(steps)
-                # Shape of sampled items is `(time length, data dimension)`
-                vals = vals.data
+                # Shape of sampled items is `(batch, time length, features)`
+                vals = [v.data if v is not None else None for v in vals]
                 if self.device >= 0:
-                    vals = cuda.to_cpu(vals)
+                    vals = [cuda.to_cpu(v) if v is not None else None for v in vals]
         return vals
 
     def sample(self, steps: int, trials: int = 1) -> 'np.ndarray':
+        # Batch prediction is supported to improve performance
         batch_trials = trials // self.TRIAL_BATCH
+        # If trial counts is not divisible by batch size,
+        # increment batch trial to satisfy the requirement of trial count.
         if trials % self.TRIAL_BATCH != 0:
             batch_trials += 1
         results = parallel(self._sample, [steps for _ in range(batch_trials)], 1)
-        # The shape is `(trials, time length, data dimension)`
-        values = np.vstack(results)
-        if values.shape[0] > trials:
-            values = values[:trials]
+        continuous = [r[0] for r in results]
+        discrete = [r[1] for r in results]
+        continuous = _cut_array(np.vstack(continuous), trials)
         # Restore normalized values
-        values = values * self.std.values + self.mean.values
-        # means = np.stack([r[1] for r in results])
-        # stds = np.stack([r[2] for r in results])
-        return values
+        predicted_values = continuous * self.std.values + self.mean.values
+        # If the model supports prediction of discrete values
+        if discrete[0] is not None:
+            discrete = _cut_array(np.vstack(discrete), trials)
+            predicted_values = np.hstack([predicted_values, discrete])
+        return predicted_values
 
     def initialize_with(self, x: 'pd.DataFrame') -> 'Model':
         self._model.reset_state()

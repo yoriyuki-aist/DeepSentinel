@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 def _sample(predicted_probabilities: 'Variable') -> 'Variable':
     """Return most probable values"""
-    return F.cast(F.max(predicted_probabilities, axis=-1, keepdims=True), "int")
+    return F.cast(F.max(predicted_probabilities, axis=-1), "int32")
 
 
 class DiscretePredictor(Chain):
@@ -89,13 +89,11 @@ class DiscretePredictor(Chain):
         predicted_distributions = [predicted]
         predicted_values = [next_value]
         for i in range(self.unit_count - 1):
+            # Convert concrete values to one-hot vector
             oh_vec = F.reshape(create_onehot_vector(next_value, self.state_kinds), (batch_size, self.state_kinds))
             mid_output = self.mid_layers[i](oh_vec, hidden_state)
             hidden_state, predicted = self.output_layers[i](mid_output, 1)
             next_value = _sample(predicted)
             predicted_distributions.append(predicted)
             predicted_values.append(next_value)
-            # Convert concrete values to one-hot vector
-            next_value = create_onehot_vector(next_value, self.state_kinds)
-        return hidden_state, F.stack(predicted_values, axis=1), F.stack(predicted_distributions, axis=1)
-
+        return hidden_state, F.stack(predicted_values, axis=1)

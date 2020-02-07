@@ -57,7 +57,7 @@ def test_sample(predicted):
         sampled = continuous._sample(predicted_values)
         b, _ = predicted_values.shape
         assert type(sampled) == Variable
-        assert sampled.shape == (b, 1)
+        assert sampled.shape == (b,)
         assert sampler.sample.call_count == (1 if use_gmm else 0)
 
 
@@ -99,4 +99,4 @@ class TestContinuousPredictor(object):
         assert type(final_hidden) == Variable
         assert final_hidden.shape == (b, h)
         assert type(sampled) == Variable
-        assert sampled.shape == (b, f, 1)
+        assert sampled.shape == (b, f)
