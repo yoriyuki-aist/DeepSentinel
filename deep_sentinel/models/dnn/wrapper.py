@@ -1,6 +1,7 @@
 import logging
 import pickle
 import shutil
+from pkg_resources import parse_version
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -276,14 +277,19 @@ class DNN(Model):
         continuous = self._normalize(continuous)
         continuous = Variable(continuous.astype('float32').values)
         discrete = Variable(discrete.astype('float32').values)
+        if parse_version(chainer.__version__[0]) >= parse_version("6.0.0"):
+            device = chainer.get_device(self.device)
+            continuous.to_device(device)
+            discrete.to_device(device)
+        else:
+            if self.device >= 0:
+                continuous.to_gpu(self.device)
+                discrete.to_gpu(self.device)
         continuous = F.expand_dims(continuous, 0)
         discrete = F.expand_dims(discrete, 0)
         continuous = F.repeat(continuous, self.TRIAL_BATCH, 0)
         discrete = F.repeat(discrete, self.TRIAL_BATCH, 0)
         self.setup_model()
-        if self.device >= 0:
-            continuous.to_gpu(self.device)
-            discrete.to_gpu(self.device)
         with chainer.using_config('train', False):
             with chainer.function.no_backprop_mode():
                 if self._discrete_column_count > 0:
@@ -295,13 +301,16 @@ class DNN(Model):
     def setup_model(self):
         if self._model is None:
             self._model = self.get_model()
-        if self.device >= 0:
-            self._model_to_gpu(self._model)
+        # If chainer 6.0.0 or later is used, use chainer's Device feature.
+        if parse_version(chainer.__version__[0]) >= parse_version("6.0.0"):
+            device = chainer.get_device(self.device)
+            self._model.to_device(device)
+            device.use()
+        else:
+            if self.device >= 0:
+                cuda.get_device_from_id(self.device).use()
+                self._model.to_gpu(self.device)
         return self._model
-
-    def _model_to_gpu(self, model = None):
-        cuda.get_device_from_id(self.device).use()
-        model.to_gpu(self.device)
 
     def get_model(self) -> 'LossCalculator':
         if self._discrete_column_count > 0:

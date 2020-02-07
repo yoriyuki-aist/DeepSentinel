@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
 
+import chainer
+import chainerx
 from chainer.training import StandardUpdater
 
 from deep_sentinel.models.dnn.dataset import extract_from
@@ -45,5 +47,7 @@ class Updater(StandardUpdater):
         optimizer.target.cleargrads()
         loss.backward()
         # Call `unchain_backward()` due to the limitation of compute resources.
-        loss.unchain_backward()
+        if chainer.backend.get_array_module(loss) != chainerx:
+            # ChainerX does not support
+            loss.unchain_backward()
         optimizer.update()
