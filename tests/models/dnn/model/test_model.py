@@ -11,6 +11,7 @@ from deep_sentinel.models.dnn.model import model
 
 chainer.global_config.train = False
 chainer.global_config.enable_backprop = False
+np.random.seed(0)
 
 
 def zero_variables(shape, astype=np.float32):
