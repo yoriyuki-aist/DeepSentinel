@@ -96,6 +96,7 @@ class TestMkdir(object):
         assert isinstance(actual, Path)
         assert actual.exists()
         assert actual.is_absolute()
+        assert str(actual) == str(path)
 
     @pytest.mark.parametrize(
         "path", ["a", "a/b", "c/../d"]

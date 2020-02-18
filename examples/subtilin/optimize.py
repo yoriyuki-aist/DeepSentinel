@@ -57,7 +57,7 @@ def train(trial: 'optuna.Trial',
     dnn_model = dnn.DNN(
         batch_size=trial.suggest_int('batch_size', 8, 128),
         output_dir=out_dir,
-        max_epoch=5,
+        max_epoch=50,
         device=device,
         n_units=trial.suggest_int('n_units', 16, 256),
         lstm_stack=trial.suggest_int('lstm_stack', 1, 10),
@@ -113,7 +113,13 @@ def main():
 
     # Optimize the params with given data
     print("----- Start to optimize -----")
-    study = optuna.create_study(study_file, study_name="example_subtilin", load_if_exists=args.resume)
+    median_pruner = optuna.pruners.MedianPruner(n_warmup_steps=5)
+    study = optuna.create_study(
+        study_file,
+        study_name="example_subtilin",
+        load_if_exists=args.resume,
+        pruner=median_pruner
+    )
     study.optimize(lambda x: train(x, train_data, out_dir, args.device, args.prune), args.trials)
     print("----- End -----")
 
