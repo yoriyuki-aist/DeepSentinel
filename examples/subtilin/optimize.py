@@ -86,12 +86,12 @@ def main():
     args = parser.parse_args()
     in_dir = utils.to_absolute(args.input_dir)
     if not in_dir.exists():
-        print("{} does not exists.".format(in_dir))
+        print("{} does not exist.".format(in_dir))
         exit(1)
 
     train_csv = in_dir / "subtilin-training.csv"
     if not train_csv.exists():
-        print("{} does not exists. Please generate training data.".format(train_csv))
+        print("{} does not exist. Please generate training data.".format(train_csv))
         exit(1)
 
     out_dir = utils.mkdir(args.output_dir)

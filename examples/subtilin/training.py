@@ -1,59 +1,15 @@
 import argparse
-import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-import numpy as np
-import pandas as pd
 import matplotlib as mpl
-mpl.use("Agg")
+import pandas as pd
 
-import matplotlib.pyplot as plt
+mpl.use("Agg")
 
 from deep_sentinel import utils
 from deep_sentinel.models import dnn
 
-if TYPE_CHECKING:
-    pass
-
-logger = logging.getLogger(__name__)
-
-
 activation_funcs = dnn.model.utils.ActivationFunc.choices()
-
-
-def read_simulations(data_dir: 'Path') -> 'np.ndarray':
-    simulations_dir = data_dir / "1" / "simulations"
-    csv_files = list(simulations_dir.glob("*.csv"))
-    # Each CSV's dimensions is (Steps, Features)
-    csv_contents = [pd.read_csv(str(f)).values for f in csv_files]
-    # Stack them into one ndarray. The shape becomes (Trials, Steps, Features)
-    return np.stack(csv_contents)
-
-
-def plot_results(sampled: 'np.ndarray', ground_truth: 'np.ndarray'):
-    titles = ["Ground truth", "Sampled values"]
-    colors = ["m", "g"]
-    steps = sampled.shape[1]
-    x_axis = range(1, steps + 1)
-    fig, axes = plt.subplots(2, 1, figsize=(8, 4), sharey="all", sharex="all")
-    for i, arr in enumerate([ground_truth, sampled]):
-        title = titles[i]
-        color = colors[i]
-        if arr.shape[1] > steps:
-            arr = arr[:, :steps]
-        _mean = np.mean(arr, axis=0)
-        _std = np.std(arr, axis=0)
-        _min = _mean - _std
-        _max = _mean + _std
-        # Plot typical actual values.
-        _example = arr[0]
-        axes[i].set_title(title)
-        axes[i].plot(x_axis, _mean, '{}-.'.format(color))
-        axes[i].plot(x_axis, _min, '{}:'.format(color))
-        axes[i].plot(x_axis, _max, '{}:'.format(color))
-        axes[i].plot(x_axis, _example, '{}-'.format(color))
-    return fig
 
 
 def get_parser():
@@ -69,7 +25,7 @@ def get_parser():
                         type=Path,
                         required=True,
                         help="Path to output dir")
-    train_params = parser.add_argument_group("Model params")
+    train_params = parser.add_argument_group("Train params")
     train_params.add_argument("-b",
                               "--batch-size",
                               type=int,
@@ -126,12 +82,12 @@ def main():
     args = parser.parse_args()
     in_dir = utils.to_absolute(args.input_dir)
     if not in_dir.exists():
-        print("{} does not exists.".format(in_dir))
+        print("{} does not exist.".format(in_dir))
         exit(1)
 
     train_csv = in_dir / "subtilin-training.csv"
     if not train_csv.exists():
-        print("{} does not exists. Please generate training data.".format(train_csv))
+        print("{} does not exist. Please generate training data.".format(train_csv))
         exit(1)
 
     out_dir = utils.mkdir(args.output_dir)
@@ -176,44 +132,6 @@ def main():
     # Dump the weights of the model whose performance is the best.
     saved_model = dnn_model.save(out_dir)
     print("Save as: {}".format(saved_model))
-    print("----- End -----")
-
-    # Initialize with given seed data
-    seed_csv = in_dir / "1" / "subtilin-seed.csv"
-    if not seed_csv.exists():
-        print("{} does not exists. Please generate seed data.".format(seed_csv))
-        exit(1)
-
-    # Read seed data
-    seed_data = pd.read_csv(str(seed_csv), index_col=[0], header=[0])
-    print("----- Seed data -----")
-    print("File: {}".format(seed_csv))
-    print("Length: {}".format(len(seed_data)))
-    print("----- Start to sample -----")
-    steps = 100
-    trials = 10
-    print("# Trials: {}".format(trials))
-    print("# Steps: {}".format(steps))
-
-    # Load saved weights from saved model file
-    # If you use the instance which has been trained already, you can skip this step.
-    # This step will require the saved weights (`dnn-model` file) and its meta data (`dnn-model-meta` file)
-    # dnn_model.load(saved_model)
-
-    # Initialize the internal state of DNN model
-    dnn_model.initialize_with(seed_data)
-
-    # Sampling values from estimated distributions
-    sampled = dnn_model.sample(steps=steps, trials=trials)
-
-    # Obtain all simulated results
-    ground_truth = read_simulations(in_dir)
-
-    # Shape of `sampled` and `ground_truth` are (Trials, Steps, Features)
-    # Extract [SpaS] (a concentration of SpaS) only to plot
-    figure = plot_results(sampled[:, :, -1], ground_truth[:, :, -1])
-    print("Save as: {}".format(str(out_dir / 'sampled.png')))
-    figure.savefig(str(out_dir / 'sampled.png'))
     print("----- End -----")
 
 
