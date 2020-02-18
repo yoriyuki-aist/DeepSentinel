@@ -119,7 +119,7 @@ class SWaTClassificationMetrics(object):
         if item.startswith('_'):
             return object.__getattribute__(self, item)
         try:
-            cached = object.__getattribute__(self, f'_{item}')
+            cached = object.__getattribute__(self, '_{}'.format(item))
         except AttributeError:
             cached = None
         if cached is not None:
