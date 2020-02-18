@@ -16,7 +16,7 @@ Please see the help messages of the scripts for more detail.
 ### Generate training dataset
 
 First, generate sample data to learn. This step will require a lot of computational resources and time.
-We recommend you to run this script on the computer who has a large number of faster CPU cores. 
+We recommend you to run this script on the computer which has a large number of faster CPU cores. 
 
 Seed data is a short length of time-series (\~1000). It is used as the initial data to initialize the internal state of DNN model.
 Trial data is a ground truth. It is generated for each seed data.
