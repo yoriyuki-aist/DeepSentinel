@@ -35,6 +35,25 @@ def _cut_array(arr: 'np.ndarray', length: int) -> 'np.ndarray':
     return arr
 
 
+def _to_cpu(arr: 'np.ndarray') -> 'np.ndarray':
+    if np != chainer.backend.get_array_module(arr):
+        return cuda.to_cpu(arr)
+    return arr
+
+
+def _to_device(arr: 'Variable', device: 'Union[str, int]'):
+    if parse_version(chainer.__version__[0]) >= parse_version("6.0.0"):
+        device = chainer.get_device(device)
+        arr.to_device(device)
+    else:
+        if not isinstance(device, int):
+            device = int(device)
+        if device >= 0:
+            cuda.get_device_from_id(device).use()
+            arr.to_gpu(device)
+    return arr
+
+
 class DNN(Model):
     """Wrapper module of DNN model. Organize training and prediction tasks."""
 
@@ -227,8 +246,6 @@ class DNN(Model):
         dict_dataset = self._create_dataset(x)
         self.setup_model()
         model = self._model.copy(mode='copy')
-        if self.device >= 0:
-            self._model_to_gpu(model)
         model.set_as_predict()
         iterator = create_iterator(dict_dataset, 1, train=False)
         results = []
@@ -241,9 +258,7 @@ class DNN(Model):
                         break
                     values = concat_examples(batch, self.device)
                     vals = model(*extract_from(values)).data
-                    if self.device >= 0:
-                        vals = cuda.to_cpu(vals)
-                    vals = np.sum(vals, axis=-1, keepdims=True)
+                    vals = np.sum(_to_cpu(vals), axis=-1, keepdims=True)
                     results.append(np.squeeze(vals))
         # The shape is `(time length,)`
         results = np.concatenate(results, axis=0)
@@ -256,9 +271,7 @@ class DNN(Model):
             with chainer.function.no_backprop_mode():
                 vals = model.sample(steps)
                 # Shape of sampled items is `(batch, time length, features)`
-                vals = [v.data if v is not None else None for v in vals]
-                if chainer.backend.get_array_module(vals[0]) != np:
-                    vals = [cuda.to_cpu(v) if v is not None else None for v in vals]
+                vals = [_to_cpu(v.data) if v is not None else None for v in vals]
         return vals
 
     def sample(self, steps: int, trials: int = 1) -> 'np.ndarray':
@@ -286,14 +299,9 @@ class DNN(Model):
         continuous = self._normalize(continuous)
         continuous = Variable(continuous.astype('float32').values)
         discrete = Variable(discrete.astype('float32').values)
-        if parse_version(chainer.__version__[0]) >= parse_version("6.0.0"):
-            device = chainer.get_device(self.device)
-            continuous.to_device(device)
-            discrete.to_device(device)
-        else:
-            if self.device >= 0:
-                continuous.to_gpu(self.device)
-                discrete.to_gpu(self.device)
+        # Send to the specified device
+        _to_device(continuous, self.device)
+        _to_device(discrete, self.device)
         continuous = F.expand_dims(continuous, 0)
         discrete = F.expand_dims(discrete, 0)
         continuous = F.repeat(continuous, self.TRIAL_BATCH, 0)
