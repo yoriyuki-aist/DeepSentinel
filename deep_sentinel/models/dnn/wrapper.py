@@ -83,6 +83,9 @@ class DNN(Model):
         # For disable outputs
         self._disable_extensions = False
 
+        # Additional extensions for training
+        self._additional_exts = {}
+
     def _create_dataset(self, x: 'pd.DataFrame') -> 'DictDataset':
         continuous, discrete = dataset.split_category_data(x)
         # Record the metrics of training data
@@ -92,6 +95,9 @@ class DNN(Model):
             self._discrete_state_kinds = int(discrete.nunique().max())
         dict_dataset = create_dataset(self._normalize(continuous), discrete, self.bprop_length)
         return dict_dataset
+
+    def set_trainer_extension(self, name: str, extension: 'chainer.training.Extension'):
+        self._additional_exts[name] = extension
 
     def _fit(self, train_data, val_data, batch_size: 'Optional[int]' = None) -> 'Optional[float, np.ndarray]':
         self.setup_model()
@@ -105,6 +111,9 @@ class DNN(Model):
 
         if self._disable_extensions:
             trainer.disable_builtin_extensions()
+
+        for name, ext in self._additional_exts.items():
+            trainer.add_trainer_extension(name, ext)
 
         # Override batch size
         if batch_size:
@@ -248,7 +257,7 @@ class DNN(Model):
                 vals = model.sample(steps)
                 # Shape of sampled items is `(batch, time length, features)`
                 vals = [v.data if v is not None else None for v in vals]
-                if self.device >= 0:
+                if chainer.backend.get_array_module(vals[0]) != np:
                     vals = [cuda.to_cpu(v) if v is not None else None for v in vals]
         return vals
 
