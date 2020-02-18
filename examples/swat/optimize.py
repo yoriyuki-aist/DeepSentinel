@@ -71,7 +71,7 @@ def train(trial: 'optuna.Trial',
         lstm_stack=trial.suggest_int('lstm_stack', 1, 10),
         dropout_ratio=trial.suggest_uniform('dropout_ratio', 0, 1),
         activation=trial.suggest_categorical('activation', activation_funcs),
-        bprop_length=trial.suggest_int('bprop_length', 10, 200),
+        bprop_length=trial.suggest_int('bprop_length', 100, 1000),
         gmm_classes=trial.suggest_int('gmm_classes', 1, 5)
     )
     # Disable some extensions, such as PlotReport extension, PrintReport extension.
@@ -98,10 +98,12 @@ def main():
         exit(1)
 
     out_dir = utils.mkdir(args.output_dir)
-    # Read CSV data and convert it to pandas.DataFrame
+    # Read .xlsx data and convert it to pandas.DataFrame
+    # This step will take a lot of time.
     normal_data = SWaTData(normal_file)
     normal_df = normal_data.read()
-    train_data = normal_df[[normal_data.continuous_columns, *normal_data.discrete_columns]]
+    # Extract data without labels
+    train_data = normal_df[[*normal_data.continuous_columns, *normal_data.discrete_columns]]
 
     # Study file is a database file of Optuna
     study_file = "sqlite:///" + str(out_dir / 'optimize.db')
