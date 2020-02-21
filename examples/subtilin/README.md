@@ -22,7 +22,7 @@ We recommend that use the number of seeds as 1 since the limitation of resources
 
 
 ```bash
-$ pipenv run python simulate.py \
+$ python simulate.py \
     -o dataset/ \
     --train-length 100000 \
     --total-seeds 1 \
@@ -89,7 +89,7 @@ $ python sampling.py \
 This step require a additional module, [Optuna](https://github.com/optuna/optuna).
 
 ```bash
-$ pipenv run pip install "optuna==1.1.0"
+$ pip install "optuna==1.1.0"
 ```
 
 Specify the number of trials. Note that it also includes successful, failed, and pruned trials.
