@@ -63,7 +63,7 @@ class DNN(Model):
     # Number of batch for sampling
     TRIAL_BATCH = 1000
 
-    def __init__(self, batch_size: int, device: int, n_units: int, lstm_stack: int, dropout_ratio: float,
+    def __init__(self, batch_size: int, device: 'Union[int, str]', n_units: int, lstm_stack: int, dropout_ratio: float,
                  activation: str, bprop_length: int, max_epoch: int, output_dir: 'Union[str, Path]',
                  gmm_classes: int):
         super(DNN, self).__init__()
@@ -324,9 +324,12 @@ class DNN(Model):
             self._model.to_device(device)
             device.use()
         else:
-            if self.device >= 0:
-                cuda.get_device_from_id(self.device).use()
-                self._model.to_gpu(self.device)
+            device = self.device
+            if not isinstance(device, int):
+                device = int(device)
+            if device >= 0:
+                cuda.get_device_from_id(device).use()
+                self._model.to_gpu(device)
         return self._model
 
     def get_model(self) -> 'LossCalculator':
