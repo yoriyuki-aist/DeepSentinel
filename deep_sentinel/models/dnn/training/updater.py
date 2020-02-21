@@ -1,8 +1,17 @@
 from typing import TYPE_CHECKING
 
 import chainer
-import chainerx
 from chainer.training import StandardUpdater
+
+try:
+    import chainerx
+
+    def is_chx(arr) -> bool:
+        return chainer.backend.get_array_module(arr) != chainerx
+except ImportError:
+    # Chainer 5.x does not support ChainerX
+    def is_chx(arr) -> bool:
+        return False
 
 from deep_sentinel.models.dnn.dataset import extract_from
 
@@ -47,7 +56,8 @@ class Updater(StandardUpdater):
         optimizer.target.cleargrads()
         loss.backward()
         # Call `unchain_backward()` due to the limitation of compute resources.
-        if chainer.backend.get_array_module(loss) != chainerx:
-            # ChainerX does not support
+        if not is_chx(loss):
+            # ChainerX does not support `unchain_backward`
+            # (The computation graph is implicitly interrupted during back propagation.)
             loss.unchain_backward()
         optimizer.update()
