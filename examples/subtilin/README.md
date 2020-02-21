@@ -4,14 +4,11 @@ This is a example of learning the behavior of stochastic hybrid system (Subtilin
 
 ## Installation
 
-```bash
-$ cd path/to/examples/subtilin
-$ pipenv install
-```
+Please see [the installation guide](../../README.md) to install DeepSentinel.
 
 ## Usage
 
-Please see the help messages of the scripts for more detail.
+Please see the help messages of the scripts to get more detail.
 
 ### Generate training dataset
 
@@ -55,7 +52,7 @@ $ tree -L 3 ./dataset/
 Training model with default params:
 
 ```bash
-$ pipenv run python training.py \
+$ python training.py \
     -i dataset/ \
     -o output/default
 ```
@@ -81,7 +78,7 @@ $ tree ./output/default
 Sample values from the end of seed data. This script require the model file to use.
 
 ```bash
-$ pipenv run python sampling.py \
+$ python sampling.py \
     -i dataset/ \
     -o output/default \
     -m output/default/dnn-model
@@ -98,7 +95,7 @@ $ pipenv run pip install "optuna==1.1.0"
 Specify the number of trials. Note that it also includes successful, failed, and pruned trials.
 
 ```bash
-$ pipenv run python optimize.py \
+$ python optimize.py \
     -i dataset/ \
     -o output/opt \
     -t 300
@@ -113,13 +110,13 @@ You can use ChainerX as follows.
 
 ```bash
 # Do not use ChainerX (CPU)
-$ pipenv run python training.py --device -1
+$ python training.py --device -1
 # Do not use ChainerX (GPU)
-$ pipenv run python training.py --device 0
+$ python training.py --device 0
 # Use ChainerX with CPU
-$ pipenv run python training.py --device native
+$ python training.py --device native
 # Use ChainerX with GPU
-$ pipenv run python training.py --device cuda:0
+$ python training.py --device cuda:0
 ```
 
 ChainerX is available on hyper parameter optimization, too.

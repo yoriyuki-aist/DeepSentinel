@@ -6,15 +6,11 @@ This is an example of anomaly detection of SWaT system\[1\] using DeepSentinel.
 
 ## Installation
 
-```bash
-$ cd path/to/swat
-$ pipenv install
-```
-
-This example require some additional modules.
+Please see [the installation guide](../../README.md) to install DeepSentinel.
+This example requires some additional modules.
 
 ```bash
-$ pipenv run pip install xlrd sklearn
+$ pip install xlrd sklearn
 ```
 
 ## Dataset
@@ -31,7 +27,7 @@ SWaT dataset contains two types of data, normal data and attack data.
 Train the model by normal data in this approach.
 
 ```bash
-$ pipenv run python training.py \
+$ python training.py \
     --normal path/to/SWaT_Dataset_Normal_v1.xlsx \
     -o output/default
 ```
@@ -57,7 +53,8 @@ $ tree ./output/default
 Evaluate the model by performing anomaly detection.
 
 ```bash
-$ pipenv run python evaluate.py --attack path/to/SWaT_Dataset_Attack_v1.xlsx \
+$ python evaluate.py \
+    --attack path/to/SWaT_Dataset_Attack_v1.xlsx \
     -o output/default \
     --model output/default/dnn-model
 ```
@@ -69,14 +66,14 @@ The results will be saved as `output/default/metrics_summary.csv` and `output/de
 This step require a additional module, [Optuna](https://github.com/optuna/optuna).
 
 ```bash
-$ pipenv run pip install "optuna==1.1.0"
+$ pip install "optuna==1.1.0"
 ```
 
 Specify the number of trials. Note that it also includes successful, failed, and pruned trials.
 
 ```bash
-$ pipenv run python optimize.py \
-    -i dataset/ \
+$ python optimize.py \
+    --normal path/to/SWaT_Dataset_Normal_v1.xlsx \
     -o output/opt \
     -t 300
 ```
