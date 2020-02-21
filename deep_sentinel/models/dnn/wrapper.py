@@ -41,13 +41,15 @@ def _to_cpu(arr: 'np.ndarray') -> 'np.ndarray':
     return arr
 
 
+def chainer_is_newer_than(version: str) -> bool:
+    return parse_version(chainer.__version__[0]) >= parse_version(version)
+
+
 def _to_device(arr: 'Variable', device: 'Union[str, int]'):
-    if parse_version(chainer.__version__[0]) >= parse_version("6.0.0"):
+    if chainer_is_newer_than("6.0.0"):
         device = chainer.get_device(device)
         arr.to_device(device)
     else:
-        if not isinstance(device, int):
-            device = int(device)
         if device >= 0:
             cuda.get_device_from_id(device).use()
             arr.to_gpu(device)
@@ -81,6 +83,8 @@ class DNN(Model):
             }
         ))
         self.batch_size = batch_size
+        if not isinstance(device, int) and not chainer_is_newer_than("6.0.0"):
+            device = int(device)
         self.device = device
         self.n_units = n_units
         self.lstm_stack = lstm_stack
@@ -324,12 +328,9 @@ class DNN(Model):
             self._model.to_device(device)
             device.use()
         else:
-            device = self.device
-            if not isinstance(device, int):
-                device = int(device)
-            if device >= 0:
-                cuda.get_device_from_id(device).use()
-                self._model.to_gpu(device)
+            if self.device >= 0:
+                cuda.get_device_from_id(self.device).use()
+                self._model.to_gpu(self.device)
         return self._model
 
     def get_model(self) -> 'LossCalculator':
