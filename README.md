@@ -35,7 +35,7 @@ DeepSentinel is available to be installed by pip from GitHub.
 
 ```bash
 # Install latest version of DeepSentinel
-$ pip install git+https://github.com/yoriyuki-aist/DeepSentinel@master
+$ pip install git+https://github.com/yoriyuki-aist/DeepSentinel
 # Specify the version
 $ pip install git+https://github.com/yoriyuki-aist/DeepSentinel@3.0.0
 ```
@@ -178,4 +178,4 @@ Copyright (C) 2017-2019: National Institute of Advanced Industrial Science and T
 
 ## References
 
-\[1\]: Jun Inoue, Yoriyuki Yamagata, Yuqi Chen, Christopher M Poskitt, andJun Sun.   Anomaly detection for a water treatment system usingunsupervised machine learning. In2017 IEEE International Conferenceon Data Mining Workshops (ICDMW), pages 1058–1065. IEEE, 2017.
+\[1\]: Jun Inoue, Yoriyuki Yamagata, Yuqi Chen, Christopher M Poskitt, and Jun Sun. Anomaly detection for a water treatment system using unsupervised machine learning. In2017 IEEE International Conferenceon Data Mining Workshops (ICDMW), pages 1058–1065. IEEE, 2017.
