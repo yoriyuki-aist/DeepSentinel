@@ -30,7 +30,7 @@ def to_absolute(p: 'Path') -> 'Path':
     # Workaround for Python 3.5
     # Python 3.5's `pathlib.Path.resolve()` raises FileNotFoundError if the path doesn't exist.
     if sys.version_info < (3, 6):
-        return Path(os.path.abspath(os.path.expanduser(p.name)))
+        return Path(os.path.abspath(os.path.expanduser(str(p))))
     return p.expanduser().resolve()
 
 

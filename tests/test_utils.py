@@ -41,12 +41,19 @@ class TestToPath(object):
 class TestToAbsolute(object):
 
     @pytest.mark.parametrize(
-        "path", [Path("a"), Path("../../b"), Path("~/c"),  Path("./c"), Path("/b")]
+        "path,expected", [
+            (Path("a"), Path.cwd() / "a"),
+            (Path("../../b"), Path.cwd().parent.parent / "b"),
+            (Path("~/c"), Path.home() / "c"),
+            (Path("./c"), Path.cwd() / "c"),
+            (Path("/b"), Path("/b")),
+        ]
     )
-    def test_normal(self, path):
+    def test_normal(self, path, expected):
         actual = utils.to_absolute(path)
         assert isinstance(actual, Path)
         assert actual.is_absolute()
+        assert actual == expected
 
     @pytest.mark.parametrize(
         "path, exc", [
