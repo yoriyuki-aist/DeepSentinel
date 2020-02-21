@@ -1,6 +1,20 @@
-.git
 *.gz
 *.jar
+
+# Ignore python related files
+.venv/
+__pycache__
+.python-version
 *.pyc
+*.egg-info
+build/
+dist/
+.pytest_cache
+.tox/
+
+# Ignore datasets and artifacts
 data/*
 output*/*
+
+# OS related files
+.DS_Store

@@ -1,0 +1,23 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pytest = "*"
+tox = "*"
+
+[packages]
+chainer = ">=5.3.0"
+numpy = ">=1.15.0"
+pandas = "*"
+tqdm = "*"
+matplotlib = "*"
+scipy = ">=1.2"
+deep-sentinel = {editable = true,path = "."}
+
+[requires]
+python_version = "3.7"
+
+[scripts]
+test = "py.test -v"
