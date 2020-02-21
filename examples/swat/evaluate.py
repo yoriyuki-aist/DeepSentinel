@@ -1,10 +1,11 @@
 import argparse
+from functools import lru_cache
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pandas as pd
-from sklearn.metrics import auc, precision_score, recall_score, f1_score
+from sklearn.metrics import precision_score, recall_score, f1_score, auc
 
 from deep_sentinel import utils
 from deep_sentinel.models import dnn
@@ -58,9 +59,10 @@ class AttackReport(object):
         truth = target_scores['Attack'].values
         pred = target_scores['Normal'].values
         return pd.DataFrame({
-            precision_label: [precision_score(truth, pred)],
-            recall_label: [recall_score(truth, pred)],
-            f_measure_label: [f1_score(truth, pred)],
+            # zero_division=1 means that suppress warning when the calculation causes zero-division
+            precision_label: [precision_score(truth, pred, zero_division=1)],
+            recall_label: [recall_score(truth, pred, zero_division=1)],
+            f_measure_label: [f1_score(truth, pred, zero_division=1)],
             'Start Time': [self.from_date],
             'End Time': [self.to_date],
             'Attack Point': [self.attack_point],
@@ -85,8 +87,8 @@ class SWaTClassificationMetrics(object):
 
     def __init__(self, predicted_results: 'pd.DataFrame', true_values: 'pd.DataFrame'):
         """
-        Initialize. Predicted results must be `pandas.DataFrame` and its shape is (T, E),
-        where `T` is a index value of time series and `E`is a number of epoch.
+        Initialize. Predicted results must be `pandas.DataFrame` and its shape is (T, 1),
+        where `T` is a index value of time series.
         :param predicted_results:
         :param true_values:
         """
@@ -99,92 +101,65 @@ class SWaTClassificationMetrics(object):
             by=score_column_name, ascending=False
         )
 
-        # Cached values
-        self._precision = None  # type: NullableDF
-        self._recall = None  # type: NullableDF
-        self._f_measure = None  # type: NullableDF
-        self._auc = None  # type: NullableDF
-        self._roc = None  # type: NullableDF
-        # Cached values
-        self._f_max_id = None  # type: Optional[int]
-        self._correct_detection = None  # type: NullableDF
-        self._false_detection = None  # type: NullableDF
-        self._false_positive = None  # type: NullableDF
-
         # List of attacks
         self.attack_list = Path(__file__).parent / 'attack_list.csv'
 
-    def __getattribute__(self, item: str):
-        """Obtain cached values before access its calculate method."""
-        if item.startswith('_'):
-            return object.__getattribute__(self, item)
-        try:
-            cached = object.__getattribute__(self, '_{}'.format(item))
-        except AttributeError:
-            cached = None
-        if cached is not None:
-            return cached
-        return object.__getattribute__(self, item)
-
-    def clear_cache(self):
-        self._precision = None
-        self._recall = None
-        self._f_measure = None
-        self._auc = None
-        self._roc = None
-
     @property
+    @lru_cache()
     def f_max_id(self):
-        self._f_max_id = self.f_measure.idxmax()
-        return self._f_max_id
+        return self.f_measure.idxmax()
 
     @property
+    @lru_cache()
     def correct_detection(self) -> 'pd.Series':
-        self._correct_detection = self.results_with_labels[self.attack_label].cumsum()
-        return self._correct_detection
+        return self.results_with_labels[self.attack_label].cumsum()
 
     @property
+    @lru_cache()
     def false_detection(self) -> 'pd.Series':
-        self._false_detection = self.results_with_labels[self.normal_label].cumsum()
-        return self._false_detection
+        return self.results_with_labels[self.normal_label].cumsum()
 
     @property
+    @lru_cache()
     def precision(self) -> 'pd.Series':
-        self._precision = self.correct_detection / (self.correct_detection + self.false_detection)
-        self._precision.name = self.precision_label
-        return self._precision
+        _precision = self.correct_detection / (self.correct_detection + self.false_detection)
+        _precision.name = self.precision_label
+        return _precision
 
     @property
+    @lru_cache()
     def recall(self) -> 'pd.Series':
-        self._recall = self.correct_detection / self.results_with_labels[self.attack_label].sum()
-        self._recall.name = self.recall_label
-        return self._recall
+        _recall = self.correct_detection / self.results_with_labels[self.attack_label].sum()
+        _recall.name = self.recall_label
+        return _recall
 
     @property
+    @lru_cache()
     def false_positive(self) -> 'pd.Series':
-        self._false_positive = self.false_detection / self.results_with_labels[self.normal_label].sum()
-        return self._false_positive
+        return self.false_detection / self.results_with_labels[self.normal_label].sum()
 
     @property
+    @lru_cache()
     def f_measure(self) -> 'pd.Series':
-        self._f_measure = 2 * self.precision * self.recall / (self.precision + self.recall)
-        self._f_measure.name = self.f_measure_label
-        return self._f_measure
+        _f_measure = 2 * self.precision * self.recall / (self.precision + self.recall)  # type: pd.Series
+        _f_measure.name = self.f_measure_label
+        return _f_measure.fillna(0)
 
     @property
+    @lru_cache()
     def roc(self) -> 'pd.DataFrame':
         df = pd.DataFrame(index=self.predicted_results.index)
         df[self.roc_false_label] = self.false_positive
         df[self.roc_true_label] = self.recall
-        self._roc = df
-        return self._roc
+        return df
 
     @property
+    @lru_cache()
     def auc(self) -> 'float':
-        self._auc = auc(self.false_positive.values, self.recall.values)
-        return self._auc
+        return auc(self.false_positive.values, self.recall.values)
 
     @property
+    @lru_cache()
     def summary(self):
         f_max_id = self.f_max_id
         return pd.DataFrame.from_dict({
@@ -195,6 +170,7 @@ class SWaTClassificationMetrics(object):
         })
 
     @property
+    @lru_cache()
     def detail(self):
         threshold = self.results_with_labels.loc[self.f_max_id][score_column_name]
         attacks = pd.read_csv(str(self.attack_list), header=[0])
@@ -300,15 +276,12 @@ def main():
 
     # Convet np.ndarray to pandas.DataFrame
     score_df = create_score_dataframe(scores, attack_df.index.values)
-
-    print("----- Summary -----")
     # Calculate some metrics (Precision, Recall, and so on)
     metrics = SWaTClassificationMetrics(score_df, attack_df[label_columns])
     summary = metrics.summary
-    print("{title:-^30}".format(title='Metrics Summary'))
+    print("----- Metrics Summary -----")
     for k, v in summary.to_dict().items():
         print("{k:>10}: {v[0]}".format(k=k, v=v))
-    print("{footer:-^30}".format(footer=""))
 
     # Summary contains Precision/Recall/F1 measure/AUC values
     summary_file = out_dir / 'metrics_summary.csv'

@@ -68,13 +68,13 @@ class SWaTData(object):
         label_data = pd.get_dummies(df[self.class_label]).astype('category')
         # Drop Normal/Attack column
         df.drop(self.class_label, axis=1, inplace=True)
-        df[self.normal_label_column] = label_data[self.normal_label_column]
+        df[self.normal_label_column] = label_data[self.normal_label_column].astype('int')
         try:
             df[self.attack_label_column] = label_data[self.attack_label_column]
         except KeyError:
             # There is no attack data on normal.
             df[self.attack_label_column] = 0
-            df[self.attack_label_column] = df[self.attack_label_column].astype('category')
+            df[self.attack_label_column] = df[self.attack_label_column].astype('int')
         self.df = df
         return self.df[
             [
