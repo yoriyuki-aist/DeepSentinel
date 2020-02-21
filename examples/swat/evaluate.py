@@ -55,7 +55,7 @@ class AttackReport(object):
 
     def report(self, score_with_labels: 'pd.DataFrame', threshold) -> 'pd.DataFrame':
         target_scores = score_with_labels[self.from_date:self.to_date]
-        target_scores["Normal"] = target_scores[score_column_name] >= threshold * 1
+        target_scores["Normal"] = target_scores.loc[:, score_column_name] >= threshold * 1
         truth = target_scores['Attack'].values
         pred = target_scores['Normal'].values
         return pd.DataFrame({

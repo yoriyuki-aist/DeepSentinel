@@ -70,7 +70,7 @@ class SWaTData(object):
         df.drop(self.class_label, axis=1, inplace=True)
         df[self.normal_label_column] = label_data[self.normal_label_column].astype('int')
         try:
-            df[self.attack_label_column] = label_data[self.attack_label_column]
+            df[self.attack_label_column] = label_data[self.attack_label_column].astype('int')
         except KeyError:
             # There is no attack data on normal.
             df[self.attack_label_column] = 0
