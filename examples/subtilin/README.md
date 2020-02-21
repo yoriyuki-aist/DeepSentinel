@@ -64,7 +64,7 @@ This step will generate following files.
 
 ```bash
 $ tree ./output/default
-./output/sub
+./output/default
 ├── dnn-model
 ├── dnn-model-meta
 ├── log
