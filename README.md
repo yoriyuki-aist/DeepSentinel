@@ -69,7 +69,7 @@ Please see the [examples](examples) to get the complete codes.
 
 Here is a simple way to learn a sine curve.
 
-```bash
+```python
 from deep_sentinel.models import dnn
 
 model = dnn.DNN(
